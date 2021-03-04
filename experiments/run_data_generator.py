@@ -8,17 +8,20 @@ import h5py
 # Choose correct data location
 # filepath_raw_channels = '/Users/katharinaeckstein/Documents/EMBL/Files/raw_image.h5'
 # filepath_gt_channels = '/Users/katharinaeckstein/Documents/EMBL/Files/mem_gt.h5'
-filepath_raw_channels = '/g/schwab/Eckstein/gt/mem_gt.h5'  # FIXME there was no raw data in the folder ;)
+filepath_raw_channels = '/g/schwab/Eckstein/gt/raw_image.h5'
 filepath_gt_channels = '/g/schwab/Eckstein/gt/mem_gt.h5'
 
 raw_channels = [[h5py.File(filepath_raw_channels, 'r')['data']]]
-gt_channels = [[h5py.File(filepath_gt_channels, 'r')['data']]]
+# FIXME: The raw data's x and y axis are still swapped, should be fixed on the side of the data, then the swapaxes command becomes obsolete
+gt_channels = [[h5py.File(filepath_gt_channels, 'r')['data'][:].swapaxes(1, 2)]]
+print(f'raw.shape = {raw_channels[0][0].shape}')
+print(f'gt.shape = {gt_channels[0][0].shape}')
 
 train_gen = parallel_data_generator(
     raw_channels,
     gt_channels,
     spacing=(128, 128, 128),  # (32, 32, 32),  For testing, I increased the grid spacing, speeds things up for now
-    area_size=(430, 938, 772),  # Can now be a tuple of a shape for each input volume
+    area_size=raw_channels[0][0].shape,  # Can now be a tuple of a shape for each input volume
     areas_and_spacings=None,
     target_shape=(64, 64, 64),
     gt_target_shape=(64, 64, 64),
@@ -46,7 +49,7 @@ train_gen = parallel_data_generator(
     shuffle=True,
     add_pad_mask=False,
     noise_load_dict=None,
-    n_workers=16,
+    n_workers=1,
     n_workers_noise=1,
     noise_on_channels=None,
     yield_epoch_info=True
