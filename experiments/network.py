@@ -1,3 +1,4 @@
+import numpy as np
 import torch
 import torch.nn as nn
 from torch import cat
@@ -22,6 +23,7 @@ raw_channels = [[h5py.File(filepath_raw_channels, 'r')['data']]]
 gt_channels = [[h5py.File(filepath_gt_channels, 'r')['data']]]
 print(f'raw.shape = {raw_channels[0][0].shape}')
 print(f'gt.shape = {gt_channels[0][0].shape}')
+
 
 train_gen = parallel_data_generator(
     raw_channels,
@@ -64,11 +66,18 @@ train_gen = parallel_data_generator(
 
 def conv(in_channels, out_channels):
     conv = nn.Sequential(
-        nn.Conv3d(in_channels, out_channels, kernel_size = 3),
+        nn.Conv3d(in_channels, out_channels, kernel_size = 3, padding = 1),
         nn.BatchNorm3d(num_features = out_channels),
         nn.ReLU(inplace=True)
     )
     return conv
+
+def crop_img(tensor, target_tensor):
+    target_size = target_tensor.size()[2]
+    tensor_size = tensor.size()[2]
+    delta = tensor_size - target_size
+    delta = delta//2
+    return tensor[:,:, delta:tensor_size - delta,delta:tensor_size - delta,delta:tensor_size - delta]
 
 class network(nn.Module):
     def __init__(self):
@@ -81,15 +90,17 @@ class network(nn.Module):
         self.down_conv_4 = conv(64, 128)
 
         #upsampling
-        self.up_trans_1 = nn.ConvTranspose3d(in_channels = 128, out_channels = 128, kernel_size =2, stride=2)
+        self.up_trans_1 = nn.ConvTranspose3d(in_channels = 128, out_channels = 128, kernel_size =2, stride=2, padding =1)
         self.up_conv_5 = conv(192, 64)
         self.up_conv_6 = conv(64, 64)
 
         self.out = nn.Conv3d(
                 in_channels = 64,
                 out_channels=1,
-                kernel_size=1
+                kernel_size=1,
+                padding =1
         )
+        self.output_activation = nn.Sigmoid()
 
     def forward(self, input):
         x1 = self.down_conv_1(input)
@@ -104,6 +115,7 @@ class network(nn.Module):
         print(x5.size())
         x6 = self.up_trans_1(x5)
         print(x6.size())
+        x2 = crop_img(x2, x6)
         x7 = self.up_conv_5(torch.cat([x6,x2],1))
         print(x7.size())
         x8 = self.up_conv_6(x7)
@@ -111,23 +123,32 @@ class network(nn.Module):
 
         x9 = self.out(x8)
         print(x9.size())
+        x9 = self.output_activation(x9)
         return x9
 
 
 #Optimizer
 network = network()
+network.train()
 optimizer = optim.Adam(network.parameters(), lr=0.001)
 #optimizer = optim.SGD(network.parameters(), lr=0.01)
 
+n_epochs =5
 for x, y, epoch, n, loe in train_gen:
 # in your training loop:
     optimizer.zero_grad()   # zero the gradient buffers
-    x = (torch.Tensor(x))
-    y = torch.Tensor(y)
+    x = torch.tensor(np.moveaxis(x, 4, 1), dtype=torch.float32)
+    y = torch.tensor(np.moveaxis(y, 4, 1), dtype=torch.float32)
     output = network(x)
-    loss = nn.BCELoss(output, y)
+    loss = nn.BCELoss()
+    loss = loss(output, y)
     loss.backward()
     optimizer.step()
+
+    if epoch+1 == n_epochs:
+        break
+
+
     print(f'Current epoch: {epoch}')
     print(f'Iteration within epoch: {n}')
     print(f'Is last iteration of this epoch: {loe}')
