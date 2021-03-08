@@ -206,8 +206,7 @@ for x, y, epoch, n, loe in train_gen:
                 print(acc)
 
                 if val_loe:
-
-                #last of epoch
+                    plt.show()
 
                     val_loss = sum_loss/(val_n+1)
                     print(val_loss)
@@ -219,10 +218,6 @@ for x, y, epoch, n, loe in train_gen:
                     if val_loss < best_val_loss:
                         best_val_loss = val_loss
                         torch.save(network.state_dict(), '/Users/katharinaeckstein/pytorch/network_test/result{%04d}.h5')
-
-            plt.show()
-            if loe:
-                break
 
 
 
