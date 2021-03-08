@@ -4,6 +4,7 @@ import torch.nn as nn
 from torch import cat
 import torch.optim as optim
 import sys
+import matplotlib.pyplot as plt
 # Choose the correct repo path
 sys.path.append('/Users/katharinaeckstein/Documents/source_code/pytorch_membrane_net/pytorch_tools/')
 #sys.path.append('/g/schwab/hennies/src/github/pytorch_membrane_net/pytorch_tools/')
@@ -17,20 +18,26 @@ filepath_gt_channels = '/Users/katharinaeckstein/Documents/EMBL/Files/mem_gt.h5'
 #ilepath_gt_channels_test ='/Users/katharinaeckstein/Documents/EMBL/Files/mem_gt_test_crop.h5'
 #filepath_raw_channels = '/g/schwab/Eckstein/gt/raw_image.h5'
 #filepath_gt_channels = '/g/schwab/Eckstein/gt/mem_gt.h5'
+raw_data = h5py.File(filepath_raw_channels, 'r')['data']
+gt_data = h5py.File(filepath_gt_channels, 'r')['data']
+raw_channels_train = [[raw_data[0:286]]]
+raw_channels_val = [[raw_data[286:430]]]
+gt_channels_train = [[gt_data[0:286]]]
+gt_channels_val = [[gt_data[286:430]]]
 
-raw_channels = [[h5py.File(filepath_raw_channels, 'r')['data']]]
+#raw_channels = [[h5py.File(filepath_raw_channels, 'r')['data']]]
 # FIXME: The raw data's x and y axis are still swapped, should be fixed on the side of the data, then the swapaxes command becomes obsolete
-gt_channels = [[h5py.File(filepath_gt_channels, 'r')['data']]]
-print(f'raw.shape = {raw_channels[0][0].shape}')
-print(f'gt.shape = {gt_channels[0][0].shape}')
+#gt_channels = [[h5py.File(filepath_gt_channels, 'r')['data']]]
+
+print(f'raw.shape = {raw_channels_train[0][0].shape}')
+print(f'gt.shape = {gt_channels_train[0][0].shape}')
 
 
 train_gen = parallel_data_generator(
-    raw_channels,
-    gt_channels,
-    spacing=(128, 128, 128),  # (32, 32, 32),  For testing, I increased the grid spacing, speeds things up for now
-    area_size=raw_channels[0][0].shape,  # Can now be a tuple of a shape for each input volume
-    areas_and_spacings=None,
+    raw_channels_train,
+    gt_channels_train,
+    spacing=(512, 512, 512),  # (32, 32, 32),  For testing, I increased the grid spacing, speeds things up for now
+    area_size=raw_channels_train[0][0].shape,  # Can now be a tuple of a shape for each input volume        areas_and_spacings=None,
     target_shape=(64, 64, 64),
     gt_target_shape=(64, 64, 64),
     gt_target_channels=None,
@@ -57,11 +64,30 @@ train_gen = parallel_data_generator(
     shuffle=True,
     add_pad_mask=False,
     noise_load_dict=None,
-    n_workers=1,
+    n_workers=8,
     n_workers_noise=1,
     noise_on_channels=None,
     yield_epoch_info=True
 )
+
+val_gen = parallel_data_generator(
+        raw_channels=raw_channels_val,
+        gt_channels=gt_channels_val,
+        spacing=(512, 512, 512),
+        area_size=raw_channels_val[0][0].shape,
+        target_shape=(64, 64, 64),
+        gt_target_shape=(64, 64, 64),
+        stop_after_epoch=False,
+        aug_dict= dict(smooth_output_sigma=0),
+        transform_ratio=0.,
+        batch_size=1,
+        shuffle=False,
+        add_pad_mask=False,
+        n_workers=8,
+        gt_target_channels=None,
+        yield_epoch_info=True
+    )
+
 
 
 def conv(in_channels, out_channels):
@@ -72,12 +98,6 @@ def conv(in_channels, out_channels):
     )
     return conv
 
-def crop_img(tensor, target_tensor):
-    target_size = target_tensor.size()[2]
-    tensor_size = tensor.size()[2]
-    delta = tensor_size - target_size
-    delta = delta//2
-    return tensor[:,:, delta:tensor_size - delta,delta:tensor_size - delta,delta:tensor_size - delta]
 
 class network(nn.Module):
     def __init__(self):
@@ -90,15 +110,15 @@ class network(nn.Module):
         self.down_conv_4 = conv(64, 128)
 
         #upsampling
-        self.up_trans_1 = nn.ConvTranspose3d(in_channels = 128, out_channels = 128, kernel_size =2, stride=2, padding =1)
-        self.up_conv_5 = conv(192, 64)
-        self.up_conv_6 = conv(64, 64)
+        self.up_trans_1 = nn.ConvTranspose3d(in_channels = 128, out_channels = 128, kernel_size =2, stride=2, padding =0)
+        self.up_conv_1 = conv(192, 64)
+        self.up_conv_2 = conv(64, 64)
 
         self.out = nn.Conv3d(
                 in_channels = 64,
                 out_channels=1,
                 kernel_size=1,
-                padding =1
+                padding =0
         )
         self.output_activation = nn.Sigmoid()
 
@@ -114,11 +134,11 @@ class network(nn.Module):
         x5 = self.down_conv_4(x4)
         print(x5.size())
         x6 = self.up_trans_1(x5)
+        x6 = torch.cat([x6,x2],1)
         print(x6.size())
-        x2 = crop_img(x2, x6)
-        x7 = self.up_conv_5(torch.cat([x6,x2],1))
+        x7 = self.up_conv_1(x6)
         print(x7.size())
-        x8 = self.up_conv_6(x7)
+        x8 = self.up_conv_2(x7)
         print(x8.size())
 
         x9 = self.out(x8)
@@ -127,34 +147,83 @@ class network(nn.Module):
         return x9
 
 
+
 #Optimizer
 network = network()
 network.train()
 optimizer = optim.Adam(network.parameters(), lr=0.001)
-#optimizer = optim.SGD(network.parameters(), lr=0.01)
-
-n_epochs =5
+loss = nn.BCELoss()
+sum_train_loss =0
+#training loop
 for x, y, epoch, n, loe in train_gen:
-# in your training loop:
+    # in your training loop:
     optimizer.zero_grad()   # zero the gradient buffers
     x = torch.tensor(np.moveaxis(x, 4, 1), dtype=torch.float32)
     y = torch.tensor(np.moveaxis(y, 4, 1), dtype=torch.float32)
     output = network(x)
-    loss = nn.BCELoss()
-    loss = loss(output, y)
-    loss.backward()
+    train_loss = loss(output, y)
+    sum_train_loss += train_loss
+    plt.plot(n,train_loss.detach().numpy(),'bo')
+    train_loss.backward()
     optimizer.step()
-
-    if epoch+1 == n_epochs:
-        break
-
-
+    print(train_loss)
+    print(sum_train_loss)
     print(f'Current epoch: {epoch}')
     print(f'Iteration within epoch: {n}')
     print(f'Is last iteration of this epoch: {loe}')
     print(f'x.shape = {x.shape}')
     print(f'y.shape = {y.shape}')
-    break
+
+    #validation
+    if loe:
+        plt.show()
+        train_loss = sum_train_loss/(n+1)
+
+        with torch.no_grad():
+            network.eval()
+            sum_loss = 0
+            i= 0
+            val_loss = 0
+            best_val_loss = 1
+            acc = 0
+            for x_val, y_val, val_epoch, val_n, val_loe in val_gen:
+                x_val = torch.tensor(np.moveaxis(x_val, 4, 1), dtype=torch.float32)
+                val_output = network(x_val)
+                y_val = torch.tensor(np.moveaxis(y_val, 4, 1), dtype=torch.float32)
+
+                #compute loss
+                loss = nn.BCELoss()
+                loss = loss(val_output, y_val)
+                print(loss)
+                sum_loss += loss
+                print(sum_loss)
+                plt.plot(val_n,loss.detach().numpy(),'bo')
+
+                #compute accuracy
+                total_n = gt_data.shape[0] *gt_data.shape[1] *gt_data.shape[2]
+                correct_n = torch.sum(val_output == y_val)
+                acc += correct_n/total_n
+                print(acc)
+
+                if val_loe:
+
+                #last of epoch
+
+                    val_loss = sum_loss/(val_n+1)
+                    print(val_loss)
+
+                    val_acc = acc/(val_n+1)
+                    print(val_acc)
+
+
+                    if val_loss < best_val_loss:
+                        best_val_loss = val_loss
+                        torch.save(network.state_dict(), '/Users/katharinaeckstein/pytorch/network_test/result{%04d}.h5')
+
+            plt.show()
+            if loe:
+                break
+
 
 
 
