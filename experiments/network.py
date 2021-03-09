@@ -6,18 +6,18 @@ import torch.optim as optim
 import sys
 import matplotlib.pyplot as plt
 # Choose the correct repo path
-sys.path.append('/Users/katharinaeckstein/Documents/source_code/pytorch_membrane_net/pytorch_tools/')
-#sys.path.append('/g/schwab/hennies/src/github/pytorch_membrane_net/pytorch_tools/')
+#sys.path.append('/Users/katharinaeckstein/Documents/source_code/pytorch_membrane_net/pytorch_tools/')
+sys.path.append('/g/schwab/hennies/src/github/pytorch_membrane_net/pytorch_tools/')
 from data_generation import parallel_data_generator
 import h5py
 
 # Choose correct data location
-filepath_raw_channels = '/Users/katharinaeckstein/Documents/EMBL/Files/raw_image.h5'
-filepath_gt_channels = '/Users/katharinaeckstein/Documents/EMBL/Files/mem_gt.h5'
+#filepath_raw_channels = '/Users/katharinaeckstein/Documents/EMBL/Files/raw_image.h5'
+#filepath_gt_channels = '/Users/katharinaeckstein/Documents/EMBL/Files/mem_gt.h5'
 #filepath_raw_channels_test = '/Users/katharinaeckstein/Documents/EMBL/Files/raw_image_test_crop.h5'
 #ilepath_gt_channels_test ='/Users/katharinaeckstein/Documents/EMBL/Files/mem_gt_test_crop.h5'
-#filepath_raw_channels = '/g/schwab/Eckstein/gt/raw_image.h5'
-#filepath_gt_channels = '/g/schwab/Eckstein/gt/mem_gt.h5'
+filepath_raw_channels = '/g/schwab/eckstein/gt/raw_image.h5'
+filepath_gt_channels = '/g/schwab/eckstein/gt/mem_gt.h5'
 raw_data = h5py.File(filepath_raw_channels, 'r')['data']
 gt_data = h5py.File(filepath_gt_channels, 'r')['data']
 raw_channels_train = [[raw_data[0:286]]]
@@ -181,12 +181,14 @@ for x, y, epoch, n, loe in train_gen:
         fig=plt.figure(1)
         train_loss = sum_train_loss/(n+1)
         ax1 = fig.add_subplot(111)
-        ax1.plot(epoch,train_loss.detach().numpy(),'bo')
+        ax1.plot(epoch, train_loss.detach().numpy(), 'bo')
         plt.draw()
-        plt.pause(0.05)
+        plt.pause(2)
         plt.show()
+        #plt.savefig('/g/schwab/eckstein/figures/train_loss.png')
 
         with torch.no_grad():
+            plt.savefig('/g/schwab/eckstein/figures/train_loss.png')
             network.eval()
             sum_loss = 0
             i= 0
@@ -223,21 +225,21 @@ for x, y, epoch, n, loe in train_gen:
                     val_acc = acc/(val_n+1)
                     print(val_acc)
                     #plot validation loss
-                    train_loss = sum_train_loss/(n+1)
                     plt.ion()
                     fig2 = plt.figure()
-                    ax = fig2.add_subplot(122)
-                    ax.plot(epoch,val_loss,'bo')
+                    ax = fig2.add_subplot(111)
+                    ax.plot(epoch, val_loss, 'bo')
                     plt.draw()
-                    plt.pause(0.05)
+                    plt.pause(2)
                     plt.show()
-                    #save model if val_loss is improved
+                    plt.savefig('/g/schwab/eckstein/figures/val_loss.png')
+
+                    # save model if val_loss is improved
                     if best_val_loss is None or val_loss < best_val_loss:
                         best_val_loss = val_loss
-                        torch.save(network.state_dict(), '/Users/katharinaeckstein/pytorch/network_test/result{%04d}.h5')
-                    break
+                        torch.save(network.state_dict(), '/g/schwab/eckstein/code/models/result{%04d}.h5')
 
-
+                    #break
 
 
 #if __name__ == "__main__":
