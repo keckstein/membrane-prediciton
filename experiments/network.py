@@ -154,6 +154,7 @@ network.train()
 optimizer = optim.Adam(network.parameters(), lr=0.001)
 loss = nn.BCELoss()
 sum_train_loss =0
+
 #training loop
 for x, y, epoch, n, loe in train_gen:
     # in your training loop:
@@ -163,11 +164,10 @@ for x, y, epoch, n, loe in train_gen:
     output = network(x)
     train_loss = loss(output, y)
     sum_train_loss += train_loss
-    plt.plot(n,train_loss.detach().numpy(),'bo')
     train_loss.backward()
     optimizer.step()
     print(train_loss)
-    print(sum_train_loss)
+    print(sum_train_loss/(n+1))
     print(f'Current epoch: {epoch}')
     print(f'Iteration within epoch: {n}')
     print(f'Is last iteration of this epoch: {loe}')
@@ -176,15 +176,22 @@ for x, y, epoch, n, loe in train_gen:
 
     #validation
     if loe:
-        plt.show()
+        #plot train loss for epoch
+        plt.ion()
+        fig=plt.figure(1)
         train_loss = sum_train_loss/(n+1)
+        ax1 = fig.add_subplot(111)
+        ax1.plot(epoch,train_loss.detach().numpy(),'bo')
+        plt.draw()
+        plt.pause(0.05)
+        plt.show()
 
         with torch.no_grad():
             network.eval()
             sum_loss = 0
             i= 0
             val_loss = 0
-            best_val_loss = 1
+            best_val_loss = None
             acc = 0
             for x_val, y_val, val_epoch, val_n, val_loe in val_gen:
                 x_val = torch.tensor(np.moveaxis(x_val, 4, 1), dtype=torch.float32)
@@ -197,28 +204,38 @@ for x, y, epoch, n, loe in train_gen:
                 print(loss)
                 sum_loss += loss
                 print(sum_loss)
-                plt.plot(val_n,loss.detach().numpy(),'bo')
+
 
                 #compute accuracy
-                total_n = gt_data.shape[0] *gt_data.shape[1] *gt_data.shape[2]
-                correct_n = torch.sum(val_output == y_val)
+                total_n = np.prod(gt_data.shape)
+                print(total_n)
+                pred = torch.argmax(val_output, 1)
+                correct_n = torch.sum(pred == y_val)
+                print(correct_n)
                 acc += correct_n/total_n
                 print(acc)
 
                 if val_loe:
-                    plt.show()
-
+                    #compute validation loss
                     val_loss = sum_loss/(val_n+1)
                     print(val_loss)
-
+                    #compute accuracy
                     val_acc = acc/(val_n+1)
                     print(val_acc)
-
-
-                    if val_loss < best_val_loss:
+                    #plot validation loss
+                    train_loss = sum_train_loss/(n+1)
+                    plt.ion()
+                    fig2 = plt.figure()
+                    ax = fig2.add_subplot(122)
+                    ax.plot(epoch,val_loss,'bo')
+                    plt.draw()
+                    plt.pause(0.05)
+                    plt.show()
+                    #save model if val_loss is improved
+                    if best_val_loss is None or val_loss < best_val_loss:
                         best_val_loss = val_loss
                         torch.save(network.state_dict(), '/Users/katharinaeckstein/pytorch/network_test/result{%04d}.h5')
-
+                    break
 
 
 
