@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 import torch.nn as nn
-from torch import cat
+#from torch import cat
 import torch.optim as optim
 import sys
 import matplotlib.pyplot as plt
@@ -10,6 +10,10 @@ import matplotlib.pyplot as plt
 sys.path.append('/g/schwab/hennies/src/github/pytorch_membrane_net/pytorch_tools/')
 from data_generation import parallel_data_generator
 import h5py
+#import torch.utils.tensorboard as tb
+from torch.utils.tensorboard import SummaryWriter
+import datetime
+
 
 # Choose correct data location
 #filepath_raw_channels = '/Users/katharinaeckstein/Documents/EMBL/Files/raw_image.h5'
@@ -36,12 +40,12 @@ print(f'gt.shape = {gt_channels_train[0][0].shape}')
 train_gen = parallel_data_generator(
     raw_channels_train,
     gt_channels_train,
-    spacing=(512, 512, 512),  # (32, 32, 32),  For testing, I increased the grid spacing, speeds things up for now
+    spacing=(128, 128, 128),  # (32, 32, 32),  For testing, I increased the grid spacing, speeds things up for now
     area_size=raw_channels_train[0][0].shape,  # Can now be a tuple of a shape for each input volume        areas_and_spacings=None,
     target_shape=(64, 64, 64),
     gt_target_shape=(64, 64, 64),
     gt_target_channels=None,
-    stop_after_epoch=True,
+    stop_after_epoch=False,
     aug_dict=dict(
         rotation_range=180,  # Angle in degrees
         shear_range=20,  # Angle in degrees
@@ -73,11 +77,11 @@ train_gen = parallel_data_generator(
 val_gen = parallel_data_generator(
         raw_channels=raw_channels_val,
         gt_channels=gt_channels_val,
-        spacing=(512, 512, 512),
+        spacing=(128, 128, 128),
         area_size=raw_channels_val[0][0].shape,
         target_shape=(64, 64, 64),
         gt_target_shape=(64, 64, 64),
-        stop_after_epoch=False,
+        stop_after_epoch=True,
         aug_dict= dict(smooth_output_sigma=0),
         transform_ratio=0.,
         batch_size=1,
@@ -89,7 +93,6 @@ val_gen = parallel_data_generator(
     )
 
 
-
 def conv(in_channels, out_channels):
     conv = nn.Sequential(
         nn.Conv3d(in_channels, out_channels, kernel_size = 3, padding = 1),
@@ -98,21 +101,50 @@ def conv(in_channels, out_channels):
     )
     return conv
 
+def double_down_conv(in_channels, out_channels, out_channels_2):
+    conv_double_down = nn.Sequential(
+        nn.Conv3d(in_channels, out_channels, kernel_size = 3, padding = 1),
+        nn.BatchNorm3d(num_features = out_channels),
+        nn.ReLU(inplace=True),
+        nn.Conv3d(out_channels, out_channels_2, kernel_size = 3, padding = 1),
+        nn.BatchNorm3d(num_features = out_channels_2),
+        nn.ReLU(inplace=True)
+    )
+    return conv_double_down
+def double_up_conv(in_channels, out_channels):
+    conv_double_up = nn.Sequential(
+        nn.Conv3d(in_channels, out_channels, kernel_size = 3, padding = 1),
+        nn.ReLU(inplace=True),
+        nn.Conv3d(out_channels, out_channels, kernel_size=3, padding=1),
+        nn.ReLU(inplace=True)
+    )
+    return conv_double_up
 
 class network(nn.Module):
+
+
     def __init__(self):
         super(network, self).__init__()
         #downsampling
-        self.down_conv_1 = conv(1, 32)
-        self.down_conv_2 = conv(32,64)
+        self.down_conv_1_2 = double_down_conv(1, 32, 64)
+        #self.down_conv_2 = conv(32,64)
         self.max_pool_1 = nn.MaxPool3d(kernel_size = 2, stride =2)
-        self.down_conv_3 = conv(64,64)
-        self.down_conv_4 = conv(64, 128)
+        self.down_conv_3_4 = double_down_conv(64,64,128)
+        #self.down_conv_4 = conv(64, 128)
+        self.max_pool_2 = nn.MaxPool3d(kernel_size=2, stride=2)
+        self.down_conv_5_6 = double_down_conv(128, 128, 256)
+        self.max_pool_3 = nn.MaxPool3d(kernel_size=2, stride=2)
+        self.down_conv_7_8 = double_down_conv(256, 256, 512)
+
 
         #upsampling
-        self.up_trans_1 = nn.ConvTranspose3d(in_channels = 128, out_channels = 128, kernel_size =2, stride=2, padding =0)
-        self.up_conv_1 = conv(192, 64)
-        self.up_conv_2 = conv(64, 64)
+        self.up_trans_1 = nn.ConvTranspose3d(in_channels = 512, out_channels = 512, kernel_size =2, stride=2, padding =0)
+        self.up_conv_1_2 = double_up_conv(768, 256)
+        #self.up_conv_2 = conv(64, 64)
+        self.up_trans_2 = nn.ConvTranspose3d(in_channels=256, out_channels=256, kernel_size=2, stride=2, padding=0)
+        self.up_conv_3_4 = double_up_conv(384, 128)
+        self.up_trans_3 = nn.ConvTranspose3d(in_channels=128, out_channels=128, kernel_size=2, stride=2, padding=0)
+        self.up_conv_5_6 = double_up_conv(192, 64)
 
         self.out = nn.Conv3d(
                 in_channels = 64,
@@ -123,37 +155,77 @@ class network(nn.Module):
         self.output_activation = nn.Sigmoid()
 
     def forward(self, input):
-        x1 = self.down_conv_1(input)
-        print(x1.size())
-        x2 = self.down_conv_2(x1)
-        print(x2.size())
-        x3 = self.max_pool_1(x2)
-        print(x3.size())
-        x4 = self.down_conv_3(x3)
-        print(x4.size())
-        x5 = self.down_conv_4(x4)
-        print(x5.size())
-        x6 = self.up_trans_1(x5)
-        x6 = torch.cat([x6,x2],1)
-        print(x6.size())
-        x7 = self.up_conv_1(x6)
-        print(x7.size())
-        x8 = self.up_conv_2(x7)
-        print(x8.size())
+        #down
+        x1 = self.down_conv_1_2(input)
+        #print(x1.size())
 
-        x9 = self.out(x8)
-        print(x9.size())
-        x9 = self.output_activation(x9)
-        return x9
+        x2 = self.max_pool_1(x1)
+        #print(x2.size())
+
+        x3 = self.down_conv_3_4(x2)
+        #print(x3.size())
+
+        x4 = self.max_pool_2(x3)
+        #print(x4.size())
+
+        x5 = self.down_conv_5_6(x4)
+        #print(x5.size())
+
+        x6 = self.max_pool_3(x5)
+        #print(x6.size())
+
+        x7 = self.down_conv_7_8(x6)
+        #print(x7.size())
+
+        #up
+        x8 = self.up_trans_1(x7)
+        #print(x8.size())
+
+        x9 = torch.cat([x8,x5],1)
+        #print(x9.size())
+
+        x10 = self.up_conv_1_2(x9)
+        #print(x10.size())
+
+        x11 = self.up_trans_2(x10)
+        #print(x11.size())
+
+        x12 = torch.cat([x11, x3], 1)
+        #print(x12.size())
+
+        x13 = self.up_conv_3_4(x12)
+        #print(x13.size())
+
+        x14 = self.up_trans_3(x13)
+        #print(x14.size())
+
+        x15 = torch.cat([x14, x1], 1)
+        #print(x15.size())
+
+        x16 = self.up_conv_5_6(x15)
+        #print(x16.size())
+
+        x17 = self.out(x16)
+        #print(x17.size())
+        x18 = self.output_activation(x17)
+        return x18
 
 
-
-#Optimizer
+#model
 network = network()
+#set model to train mode
 network.train()
+#optimizer
 optimizer = optim.Adam(network.parameters(), lr=0.001)
+#define loss function
 loss = nn.BCELoss()
 sum_train_loss =0
+
+#tensorboard writer
+example_input = torch.rand(1,1,64,64,64)
+writer = SummaryWriter('runs/figures/'+ datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))
+writer.add_graph(network, example_input, verbose= True) #graph with network structure, verbose = True prints result
+writer.flush()
 
 #training loop
 for x, y, epoch, n, loe in train_gen:
@@ -163,11 +235,12 @@ for x, y, epoch, n, loe in train_gen:
     y = torch.tensor(np.moveaxis(y, 4, 1), dtype=torch.float32)
     output = network(x)
     train_loss = loss(output, y)
-    sum_train_loss += train_loss
+    sum_train_loss += train_loss.item()
     train_loss.backward()
     optimizer.step()
-    print(train_loss)
-    print(sum_train_loss/(n+1))
+
+    print('Train loss for iteration: ',train_loss.item())
+    print('Total train loss divided by number of iterations:', sum_train_loss/(n+1))
     print(f'Current epoch: {epoch}')
     print(f'Iteration within epoch: {n}')
     print(f'Is last iteration of this epoch: {loe}')
@@ -177,18 +250,23 @@ for x, y, epoch, n, loe in train_gen:
     #validation
     if loe:
         #plot train loss for epoch
-        plt.ion()
-        fig=plt.figure(1)
-        train_loss = sum_train_loss/(n+1)
-        ax1 = fig.add_subplot(111)
-        ax1.plot(epoch, train_loss.detach().numpy(), 'bo')
-        plt.draw()
-        plt.pause(2)
-        plt.show()
+        train_loss_epoch = sum_train_loss/(n + 1)
+        writer.add_scalar('train_loss', train_loss_epoch, epoch)
+        writer.flush()
+        print('Train loss for epoch: ', train_loss_epoch)
+
+        #plt.ion()
+        #fig=plt.figure(1)
+        #ax1 = fig.add_subplot(111)
+        #ax1.plot(epoch, train_loss.detach().numpy(), 'bo')
+        #plt.draw()
+        #plt.pause(2)
+        #plt.show()
         #plt.savefig('/g/schwab/eckstein/figures/train_loss.png')
 
+
+
         with torch.no_grad():
-            plt.savefig('/g/schwab/eckstein/figures/train_loss.png')
             network.eval()
             sum_loss = 0
             i= 0
@@ -201,46 +279,53 @@ for x, y, epoch, n, loe in train_gen:
                 y_val = torch.tensor(np.moveaxis(y_val, 4, 1), dtype=torch.float32)
 
                 #compute loss
-                loss = nn.BCELoss()
-                loss = loss(val_output, y_val)
-                print(loss)
-                sum_loss += loss
-                print(sum_loss)
+                validation_loss = loss(val_output, y_val)
+                print('Validation loss for iteration {val_n}: ',validation_loss)
+                sum_loss += validation_loss.item()
+                print('Total validation loss divided by number of iterations:' ,sum_loss/(n+1))
 
 
                 #compute accuracy
                 total_n = np.prod(gt_data.shape)
-                print(total_n)
+                print('Total: ', total_n)
                 pred = torch.argmax(val_output, 1)
                 correct_n = torch.sum(pred == y_val)
-                print(correct_n)
+                print('Correctly predicted: ',correct_n)
                 acc += correct_n/total_n
-                print(acc)
+
 
                 if val_loe:
                     #compute validation loss
                     val_loss = sum_loss/(val_n+1)
-                    print(val_loss)
+                    print('Validation loss: ', val_loss)
                     #compute accuracy
                     val_acc = acc/(val_n+1)
-                    print(val_acc)
+                    print('Validation accuracy: ',val_acc)
+
+                    writer.add_scalar('val_accuracy', val_acc, val_epoch)
+                    writer.flush()
+                    writer.add_scalar('val_loss', val_loss, val_epoch)
+                    writer.flush()
+
+
                     #plot validation loss
-                    plt.ion()
-                    fig2 = plt.figure()
-                    ax = fig2.add_subplot(111)
-                    ax.plot(epoch, val_loss, 'bo')
-                    plt.draw()
-                    plt.pause(2)
-                    plt.show()
-                    plt.savefig('/g/schwab/eckstein/figures/val_loss.png')
+                    #plt.ion()
+                    #fig2 = plt.figure()
+                    #ax = fig2.add_subplot(111)
+                    #ax.plot(epoch, val_loss, 'bo')
+                    #plt.draw()
+                    #plt.pause(2)
+                    #plt.show()
+                    #plt.savefig('/g/schwab/eckstein/figures/val_loss.png')
 
                     # save model if val_loss is improved
                     if best_val_loss is None or val_loss < best_val_loss:
                         best_val_loss = val_loss
                         torch.save(network.state_dict(), '/g/schwab/eckstein/code/models/result{%04d}.h5')
 
-                    #break
 
+
+writer.close()
 
 #if __name__ == "__main__":
 #input = torch.rand((1,1,21,21,21))
