@@ -26,9 +26,10 @@ raw_data = h5py.File(filepath_raw_channels, 'r')['data']
 gt_data = h5py.File(filepath_gt_channels, 'r')['data']
 raw_channels_train = [[raw_data[0:286]]]
 raw_channels_val = [[raw_data[286:430]]]
-gt_channels_train = [[gt_data[0:286]]]
-gt_channels_val = [[gt_data[286:430]]]
-
+gt_channels_train = [[gt_data[0:286]*255]]
+gt_channels_val = [[gt_data[286:430]*255]]
+#gt_channels_train = [[gt_data[0:286]]]
+#gt_channels_val = [[gt_data[286:430]]]
 #raw_channels = [[h5py.File(filepath_raw_channels, 'r')['data']]]
 # FIXME: The raw data's x and y axis are still swapped, should be fixed on the side of the data, then the swapaxes command becomes obsolete
 #gt_channels = [[h5py.File(filepath_gt_channels, 'r')['data']]]
@@ -40,7 +41,7 @@ print(f'gt.shape = {gt_channels_train[0][0].shape}')
 train_gen = parallel_data_generator(
     raw_channels_train,
     gt_channels_train,
-    spacing=(128, 128, 128),  # (32, 32, 32),  For testing, I increased the grid spacing, speeds things up for now
+    spacing=(512, 512, 512),  # (32, 32, 32),  For testing, I increased the grid spacing, speeds things up for now
     area_size=raw_channels_train[0][0].shape,  # Can now be a tuple of a shape for each input volume        areas_and_spacings=None,
     target_shape=(64, 64, 64),
     gt_target_shape=(64, 64, 64),
@@ -81,7 +82,7 @@ val_gen = parallel_data_generator(
         area_size=raw_channels_val[0][0].shape,
         target_shape=(64, 64, 64),
         gt_target_shape=(64, 64, 64),
-        stop_after_epoch=True,
+        stop_after_epoch=False,
         aug_dict= dict(smooth_output_sigma=0),
         transform_ratio=0.,
         batch_size=1,
@@ -218,9 +219,9 @@ network.train()
 #optimizer
 optimizer = optim.Adam(network.parameters(), lr=0.001)
 #define loss function
-loss = nn.BCELoss()
+#loss = nn.BCELoss()
 sum_train_loss =0
-
+loss = nn.BCELoss()
 #tensorboard writer
 example_input = torch.rand(1,1,64,64,64)
 writer = SummaryWriter('runs/figures/'+ datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))
@@ -240,7 +241,7 @@ for x, y, epoch, n, loe in train_gen:
     optimizer.step()
 
     print('Train loss for iteration: ',train_loss.item())
-    print('Total train loss divided by number of iterations:', sum_train_loss/(n+1))
+    print('Total train loss divided by number of iterations:', (sum_train_loss/(n+1)))
     print(f'Current epoch: {epoch}')
     print(f'Iteration within epoch: {n}')
     print(f'Is last iteration of this epoch: {loe}')
@@ -250,10 +251,11 @@ for x, y, epoch, n, loe in train_gen:
     #validation
     if loe:
         #plot train loss for epoch
-        train_loss_epoch = sum_train_loss/(n + 1)
+        train_loss_epoch = (sum_train_loss/(n + 1))
         writer.add_scalar('train_loss', train_loss_epoch, epoch)
         writer.flush()
         print('Train loss for epoch: ', train_loss_epoch)
+        sum_train_loss = 0
 
         #plt.ion()
         #fig=plt.figure(1)
@@ -269,7 +271,6 @@ for x, y, epoch, n, loe in train_gen:
         with torch.no_grad():
             network.eval()
             sum_loss = 0
-            i= 0
             val_loss = 0
             best_val_loss = None
             acc = 0
@@ -279,19 +280,23 @@ for x, y, epoch, n, loe in train_gen:
                 y_val = torch.tensor(np.moveaxis(y_val, 4, 1), dtype=torch.float32)
 
                 #compute loss
+                #loss = nn.BCELoss()
                 validation_loss = loss(val_output, y_val)
-                print('Validation loss for iteration {val_n}: ',validation_loss)
+                print(f'Validation loss for iteration {val_n}: ', validation_loss)
                 sum_loss += validation_loss.item()
-                print('Total validation loss divided by number of iterations:' ,sum_loss/(n+1))
+                print('Total validation loss divided by number of iterations:' ,(sum_loss/(val_n+1)))
 
 
                 #compute accuracy
-                total_n = np.prod(gt_data.shape)
+                total_n = 64*64*64
                 print('Total: ', total_n)
-                pred = torch.argmax(val_output, 1)
-                correct_n = torch.sum(pred == y_val)
+                pred = torch.argmax(val_output,1)
+
+                correct_n = pred.eq(y_val).sum()
+                #correct_n = torch.sum(pred == y_val)
+                #correct_n = torch.sum(pred == y_val)
                 print('Correctly predicted: ',correct_n)
-                acc += correct_n/total_n
+                acc += (correct_n.item()/total_n)
 
 
                 if val_loe:
@@ -308,6 +313,7 @@ for x, y, epoch, n, loe in train_gen:
                     writer.flush()
 
 
+
                     #plot validation loss
                     #plt.ion()
                     #fig2 = plt.figure()
@@ -321,9 +327,9 @@ for x, y, epoch, n, loe in train_gen:
                     # save model if val_loss is improved
                     if best_val_loss is None or val_loss < best_val_loss:
                         best_val_loss = val_loss
-                        torch.save(network.state_dict(), '/g/schwab/eckstein/code/models/result{%04d}.h5')
+                        torch.save(network.state_dict(), f'/g/schwab/eckstein/code/models/result{epoch:04d}.h5')
 
-
+                        break
 
 writer.close()
 
