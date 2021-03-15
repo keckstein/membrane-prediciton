@@ -230,6 +230,7 @@ writer.flush()
 
 #training loop
 for x, y, epoch, n, loe in train_gen:
+    network.train()
     # in your training loop:
     optimizer.zero_grad()   # zero the gradient buffers
     x = torch.tensor(np.moveaxis(x, 4, 1), dtype=torch.float32)
@@ -279,6 +280,12 @@ for x, y, epoch, n, loe in train_gen:
                 val_output = network(x_val)
                 y_val = torch.tensor(np.moveaxis(y_val, 4, 1), dtype=torch.float32)
 
+                #with h5py.File(f'/g/schwab/eckstein/outputs/y_val_iteration{val_n}.h5', mode ='w') as f:
+                    #f.create_dataset('data', data = y_val[0][0], compression ='gzip' )
+
+                #with h5py.File(f'/g/schwab/eckstein/outputs/val_output_iteration{val_n}.h5', mode ='w') as f:
+                   # f.create_dataset('data', data = val_output[0][0], compression ='gzip' )
+
                 #compute loss
                 #loss = nn.BCELoss()
                 validation_loss = loss(val_output, y_val)
@@ -292,11 +299,21 @@ for x, y, epoch, n, loe in train_gen:
                 print('Total: ', total_n)
                 pred = torch.argmax(val_output,1)
 
-                correct_n = pred.eq(y_val).sum()
+
+                correct_n = torch.sum((val_output>128) == (y_val[0][0] ==1)).float()
+                #correct_n = pred.eq(y_val).sum()
                 #correct_n = torch.sum(pred == y_val)
-                #correct_n = torch.sum(pred == y_val)
+
                 print('Correctly predicted: ',correct_n)
                 acc += (correct_n.item()/total_n)
+                print(correct_n.item()/total_n)
+                print(acc)
+
+                if val_n == 18:
+                    with h5py.File(f'/g/schwab/eckstein/outputs/iteration18/y_val_{epoch}.h5', mode='w') as f:
+                        f.create_dataset('data', data = y_val[0][0], compression ='gzip' )
+                    with h5py.File(f'/g/schwab/eckstein/outputs/iteration18/val_output{epoch}.h5', mode='w') as f:
+                        f.create_dataset('data', data = val_output[0][0], compression ='gzip' )
 
 
                 if val_loe:
