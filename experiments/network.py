@@ -79,7 +79,7 @@ print(f'raw5.shape = {raw_5.shape}')
 train_gen = parallel_data_generator(
     raw_channels =[[raw_3],[raw_4],[raw_5]],
     gt_channels =[[gt_3, mask_3],[gt_4, mask_4],[gt_5, mask_5]],
-    spacing=(512, 512, 512),  # (32, 32, 32),  For testing, I increased the grid spacing, speeds things up for now
+    spacing=(64, 64, 64),  # (32, 32, 32),  For testing, I increased the grid spacing, speeds things up for now
     area_size=[raw_3.shape,raw_4.shape, raw_5.shape],
     # Can now be a tuple of a shape for each input volume        areas_and_spacings=None,
     target_shape=(64, 64, 64),
@@ -260,13 +260,16 @@ network.train()
 # optimizer
 optimizer = optim.Adam(network.parameters(), lr=0.001)
 # define loss function
-# loss = nn.BCELoss()
-# tensorboard writer
+loss = WeightMatrixWeightedBCE(class_weights = [[0.5,0.5]], weigh_with_matrix_sum=False)
+
+#tensorboard
 example_input = torch.rand(1, 1, 64, 64, 64)
 writer = SummaryWriter('runs/figures/' + datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))
 writer.add_graph(network, example_input, verbose=True)  # graph with network structure, verbose = True prints result
 writer.flush()
 sum_train_loss = 0
+
+
 # training loop
 for x, y, epoch, n, loe in train_gen:
     network.train()
@@ -284,8 +287,6 @@ for x, y, epoch, n, loe in train_gen:
     output = network(x)
     #with h5py.File(f'/g/schwab/eckstein/train_data/output_iteration{epoch}_{n}.h5', mode='w') as f:
         #f.create_dataset('data', data=output.detach().numpy()[0][0], compression='gzip')
-
-    loss = WeightMatrixWeightedBCE(class_weights = [[0.5,0.5]], weigh_with_matrix_sum=False)
     train_loss = loss(output, y)
     sum_train_loss += train_loss.item()
     train_loss.backward()
@@ -355,10 +356,11 @@ for x, y, epoch, n, loe in train_gen:
                 print(acc)
 
                 if val_n == 18:
-                    with h5py.File(f'/g/schwab/eckstein/outputs/iteration18/y_val_{epoch}.h5', mode='w') as f:
-                        f.create_dataset('data', data=y_val[0][0], compression='gzip')
-                    with h5py.File(f'/g/schwab/eckstein/outputs/iteration18/val_output{epoch}.h5', mode='w') as f:
-                        f.create_dataset('data', data=val_output[0][0], compression='gzip')
+                    pass
+                    #with h5py.File(f'/g/schwab/eckstein/outputs/iteration18/y_val_{epoch}.h5', mode='w') as f:
+                        #f.create_dataset('data', data=y_val[0][0], compression='gzip')
+                    #with h5py.File(f'/g/schwab/eckstein/outputs/iteration18/val_output{epoch}.h5', mode='w') as f:
+                        #f.create_dataset('data', data=val_output[0][0], compression='gzip')
 
                 # compute validation loss
                 if not val_loe:
