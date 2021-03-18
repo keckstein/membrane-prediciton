@@ -14,7 +14,7 @@ import h5py
 # import torch.utils.tensorboard as tb
 from torch.utils.tensorboard import SummaryWriter
 import datetime
-from loss_function import WeightMatrixWeightedBCE
+from loss_function import WeightMatrixWeightedBCELoss
 
 # Choose correct data location
 # filepath_raw_channels = '/Users/katharinaeckstein/Documents/EMBL/Files/raw_image.h5'
@@ -74,7 +74,6 @@ print(f'raw2.shape = {raw_2.shape}')
 print(f'raw3.shape = {raw_3.shape}')
 print(f'raw4.shape = {raw_4.shape}')
 print(f'raw5.shape = {raw_5.shape}')
-
 
 train_gen = parallel_data_generator(
     raw_channels =[[raw_3],[raw_4],[raw_5]],
@@ -260,7 +259,7 @@ network.train()
 # optimizer
 optimizer = optim.Adam(network.parameters(), lr=0.001)
 # define loss function
-loss = WeightMatrixWeightedBCE(class_weights = [[0.5,0.5]], weigh_with_matrix_sum=False)
+loss = WeightMatrixWeightedBCELoss([[0.5,0.5]])
 
 #tensorboard
 example_input = torch.rand(1, 1, 64, 64, 64)
@@ -277,22 +276,29 @@ for x, y, epoch, n, loe in train_gen:
     optimizer.zero_grad()  # zero the gradient buffers
 
     x = torch.tensor(np.moveaxis(x, 4, 1), dtype=torch.float32)
-    print(x.size())
-    #with h5py.File(f'/g/schwab/eckstein/train_data/x_iteration{epoch}_{n}.h5', mode='w') as f:
-        #f.create_dataset('data', data=x[0][0], compression='gzip')
+
+    with h5py.File(f'/g/schwab/eckstein/train_data/x_iteration{epoch}_{n}.h5', mode='w') as f:
+        f.create_dataset('data', data=x[0][0], compression='gzip')
+
     y = torch.tensor(np.moveaxis(y, 4, 1), dtype=torch.float32)
-    print(y.size())
-    #with h5py.File(f'/g/schwab/eckstein/train_data/y_iteration{epoch}_{n}.h5', mode='w') as f:
-        #f.create_dataset('data', data=y[0][0], compression='gzip')
+
+    with h5py.File(f'/g/schwab/eckstein/train_data/y_iteration{epoch}_{n}.h5', mode='w') as f:
+        f.create_dataset('data', data=y[0][0], compression='gzip')
+
+    with h5py.File(f'/g/schwab/eckstein/train_data/mask_iteration{epoch}_{n}.h5', mode='w') as f:
+        f.create_dataset('data', data=y[0][1], compression='gzip')
+
     output = network(x)
     #with h5py.File(f'/g/schwab/eckstein/train_data/output_iteration{epoch}_{n}.h5', mode='w') as f:
         #f.create_dataset('data', data=output.detach().numpy()[0][0], compression='gzip')
+    #loss = WeightMatrixWeightedBCE(class_weights=[[0.5, 0.5]], weigh_with_matrix_sum=False)
     train_loss = loss(output, y)
-    sum_train_loss += train_loss.item()
+    sum_train_loss += train_loss
+    print(sum_train_loss)
     train_loss.backward()
     optimizer.step()
 
-    print('Train loss for iteration: ', train_loss.item())
+    print('Train loss for iteration: ', train_loss)
     print('Total train loss divided by number of iterations:', (sum_train_loss / (n + 1)))
     print(f'Current epoch: {epoch}')
     print(f'Iteration within epoch: {n}')
@@ -326,11 +332,15 @@ for x, y, epoch, n, loe in train_gen:
                 val_output = network(x_val)
                 y_val = torch.tensor(np.moveaxis(y_val, 4, 1), dtype=torch.float32)
 
-                #with h5py.File(f'/g/schwab/eckstein/val_output/y_val_iteration{val_n}.h5', mode ='w') as f:
-                    #f.create_dataset('data', data = y_val[0][0], compression ='gzip' )
+                with h5py.File(f'/g/schwab/eckstein/val_output/y_val_iteration{epoch}{val_n}.h5', mode ='w') as f:
+                    f.create_dataset('data', data = y_val[0][0], compression ='gzip' )
 
-                #with h5py.File(f'/g/schwab/eckstein/val_output/val_output_iteration{val_n}.h5', mode ='w') as f:
-                    #f.create_dataset('data', data = val_output[0][0], compression ='gzip' )
+                with h5py.File(f'/g/schwab/eckstein/val_output/val_mask_iteration{epoch}{val_n}.h5', mode ='w') as f:
+                    f.create_dataset('data', data = y_val[0][1], compression ='gzip' )
+
+                with h5py.File(f'/g/schwab/eckstein/val_output/val_output_iteration{epoch}{val_n}.h5', mode ='w') as f:
+                    f.create_dataset('data', data = val_output[0][0], compression ='gzip' )
+
 
                 # compute loss
                 # loss = nn.BCELoss()
@@ -340,20 +350,20 @@ for x, y, epoch, n, loe in train_gen:
                 print('Total validation loss divided by number of iterations:', (sum_loss / (val_n + 1)))
 
                 # compute accuracy
-                total_n = 64 * 64 * 64
-                print('Total: ', total_n)
-                pred = torch.argmax(val_output, 1)
+                #total_n = 64 * 64 * 64
+                #print('Total: ', total_n)
+                #pred = torch.argmax(val_output, 1)
 
-                print(val_output.size())
-                print(y_val.size())
-                correct_n = torch.sum((val_output > 128) == (y_val == 1)).float()
+                #print(val_output.size())
+                #print(y_val.size())
+                #correct_n = torch.sum((val_output > 128) == (y_val == 1)).float()
                 # correct_n = pred.eq(y_val).sum()
                 # correct_n = torch.sum(pred == y_val)
 
-                print('Correctly predicted: ', correct_n)
-                acc += (correct_n.item() / total_n)
-                print(correct_n.item() / total_n)
-                print(acc)
+                #print('Correctly predicted: ', correct_n)
+                #acc += (correct_n.item() / total_n)
+                #print(correct_n.item() / total_n)
+                #print(acc)
 
                 if val_n == 18:
                     pass
