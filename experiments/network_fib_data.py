@@ -84,7 +84,7 @@ train_gen = parallel_data_generator(
     add_pad_mask=False,
     noise_load_dict=None,
     n_workers=8,
-    n_workers_noise=n_workers,
+    n_workers_noise=1,
     noise_on_channels=None,
     yield_epoch_info=True
 )
@@ -93,7 +93,7 @@ val_gen = parallel_data_generator(
     raw_channels=[[raw_val]],
     gt_channels=[[gt_val, mask_val]],
     spacing=(64, 64, 64),
-    area_size= [raw_val.shape],
+    area_size= [gt_val.shape],
     target_shape=(64, 64, 64),
     gt_target_shape=(64, 64, 64),
     stop_after_epoch=False,
@@ -261,8 +261,8 @@ for x, y, epoch, n, loe in train_gen:
     y = torch.tensor(np.moveaxis(y, 4, 1), dtype=torch.float32)
 
 
-    if y[0,1,:].detach().numpy().max():
-        i +=1
+    #if y[0,1,:].detach().numpy().max():
+        #i +=1
 
         #with h5py.File(f'/g/schwab/eckstein/train_data/x_iteration{epoch}_{n}.h5', mode='w') as f:
             #f.create_dataset('data', data=x[0][0], compression='gzip')
@@ -273,33 +273,31 @@ for x, y, epoch, n, loe in train_gen:
         #with h5py.File(f'/g/schwab/eckstein/train_data/mask_iteration{epoch}_{n}.h5', mode='w') as f:
             #f.create_dataset('data', data=y[0][1], compression='gzip')
 
-        output = network(x)
+    output = network(x)
 
-        train_loss = loss(output, y)
+    train_loss = loss(output, y)
 
-        sum_train_loss += train_loss.item()
-        train_loss.backward()
-        optimizer.step()
+    sum_train_loss += train_loss.item()
+    train_loss.backward()
+    optimizer.step()
 
-        print('Train loss for iteration: ', train_loss)
-        print('Total train loss divided by number of iterations:', (sum_train_loss / i))
-        print(f'Current epoch: {epoch}')
-        print(f'Iteration within epoch: {n}')
-        print(f'Is last iteration of this epoch: {loe}')
+    print('Train loss for iteration: ', train_loss)
+    print('Total train loss divided by number of iterations:', (sum_train_loss / (n+1)))
+    print(f'Current epoch: {epoch}')
+    print(f'Iteration within epoch: {n}')
+    print(f'Is last iteration of this epoch: {loe}')
         #print(f'x.shape = {x.shape}')
         #print(f'y.shape = {y.shape}')
 
         # validation
     if loe:
-        #train_acc = acc_train/2*(n+1)
-        #print(train_acc)
         # plot train loss for epoch
-        train_loss_epoch = (sum_train_loss / i)
+        train_loss_epoch = (sum_train_loss / (n+1))
         writer.add_scalar('train_loss', train_loss_epoch, epoch)
         writer.flush()
         print('Train loss for epoch: ', train_loss_epoch)
         sum_train_loss = 0
-        i=0
+        #i=0
 
         with torch.no_grad():
             network.eval()
@@ -308,14 +306,14 @@ for x, y, epoch, n, loe in train_gen:
             acc = 0
             val_acc = 0
             val_output = 0
-            j=0
+            #j=0
             for x_val, y_val, val_epoch, val_n, val_loe in val_gen:
                 x_val = torch.tensor(np.moveaxis(x_val, 4, 1), dtype=torch.float32)
                 val_output = network(x_val)
                 y_val = torch.tensor(np.moveaxis(y_val, 4, 1), dtype=torch.float32)
 
-                if y_val[0, 1, :].detach().numpy().max():
-                    j+=1
+                #if y_val[0, 1, :].detach().numpy().max():
+                    #j+=1
                     #with h5py.File(f'/g/schwab/eckstein/val_output/y_val_iteration{epoch}{val_n}.h5', mode ='w') as f:
                         #f.create_dataset('data', data = y_val[0][0], compression ='gzip' )
 
@@ -326,52 +324,50 @@ for x, y, epoch, n, loe in train_gen:
                         #f.create_dataset('data', data = val_output[0][0], compression ='gzip' )
 
 
-                    # compute loss
-                    validation_loss = loss(val_output, y_val)
+                # compute loss
+                validation_loss = loss(val_output, y_val)
 
-                    #print(f'Validation loss for iteration {j}: ', validation_loss)
-                    sum_loss += validation_loss.item()
-                    #print('Total validation loss divided by number of iterations:', (sum_loss / j))
+                #print(f'Validation loss for iteration {j}: ', validation_loss)
+                sum_loss += validation_loss.item()
+                #print('Total validation loss divided by number of iterations:', (sum_loss / j))
 
-                    # compute accuracy
-                    total_n = 262144
-                    correct_n = torch.count_nonzero(((val_output[0,0,:] > 0.5) == (y_val[0,0,:] == 1)))
-                    #correct_n = torch.sum(((val_output[0,0,:] > 0.5) == (y_val[0,0,:] == 1))).float()
-                    #correct_n = pred.eq(y_val).sum()
-                    # correct_n = torch.sum(pred == y_val)
+                # compute accuracy
+                total_n = 262144
+                correct_n = torch.count_nonzero(((val_output[0,0,:] < 0.5) == (y_val[0,0,:] == 0)))
 
-                    #print('Correctly predicted: ', correct_n)
-                    acc += (correct_n.item() / total_n)
-                    #print(correct_n.item() / total_n)
-                    #print(acc)
+                #correct_n = torch.sum(((val_output[0,0,:] > 0.5) == (y_val[0,0,:] == 1))).float()
 
-                #if val_n == 18:
-                    #pass
-                        #with h5py.File(f'/g/schwab/eckstein/outputs/iteration18/y_val_{epoch}.h5', mode='w') as f:
-                            #f.create_dataset('data', data=y_val[0][0], compression='gzip')
-                        #with h5py.File(f'/g/schwab/eckstein/outputs/iteration18/val_output{epoch}.h5', mode='w') as f:
-                            #f.create_dataset('data', data=val_output[0][0], compression='gzip')
+                #print('Correctly predicted: ', correct_n)
+                acc += (correct_n.item() / total_n)
+                #print(correct_n.item() / total_n)
+                #print(acc)
+
 
                 # compute validation loss
-                if not val_loe:
-                    continue
+                #if not val_loe:
+                #   continue
 
-                val_loss = sum_loss / j
-                print('Validation loss: ', val_loss)
-                # compute accuracy
-                val_acc = acc / j
-                print('Validation accuracy: ', val_acc)
+                if val_loe:
 
-                writer.add_scalar('val_accuracy', val_acc, val_epoch)
-                writer.flush()
-                writer.add_scalar('val_loss', val_loss, val_epoch)
-                writer.flush()
+                    print(val_n+1)
+                    print(val_epoch)
+                    val_loss = sum_loss / (val_n+1)
+                    print('Validation loss: ', val_loss)
+                    # compute accuracy
+                    val_acc = acc / (val_n+1)
+                    print('Validation accuracy: ', val_acc)
 
-                # save model if val_loss is improved
-                if best_val_loss is None or val_loss < best_val_loss:
-                    best_val_loss = val_loss
-                    torch.save(network.state_dict(), f'/g/schwab/eckstein/code/models/result{epoch:04d}.h5')
-                    break
+                    writer.add_scalar('val_accuracy', val_acc, val_epoch)
+                    writer.flush()
+                    writer.add_scalar('val_loss', val_loss, val_epoch)
+                    writer.flush()
+                    val_acc = 0
+                    acc = 0
+                    # save model if val_loss is improved
+                    if best_val_loss is None or val_loss < best_val_loss:
+                        best_val_loss = val_loss
+                        torch.save(network.state_dict(), f'/g/schwab/eckstein/code/models/result{epoch:04d}.h5')
+                        break
 
 writer.close()
 
