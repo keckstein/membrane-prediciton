@@ -138,23 +138,24 @@ network = PiledUnet(n_nets = 3,
                     in_channels=1,
                     out_channels=[1,1,1],
                     filter_sizes_down = (
-                        ((4, 8), (8, 16), (16, 32)),
-                        ((8, 16), (16, 32), (32, 64)),
+                        #((4, 8), (8, 16), (16, 32)),
+                        #((8, 16), (16, 32), (32, 64)),
                         ((32, 64), (64, 128), (128, 256))
                     ),
                     filter_sizes_bottleneck=(
-                        (32, 64),
-                        (64, 128),
+                        #(32, 64),
+                        #(64, 128),
                         (256, 512)
                     ),
                     filter_sizes_up = (
-                        ((32, 32), (16, 16), (8, 8)),
-                        ((64, 64), (32, 32), (16, 16)),
+                        #((32, 32), (16, 16), (8, 8)),
+                        #((64, 64), (32, 32), (16, 16)),
                         ((256, 256), (128, 128), (64, 64))
                     ),
                     batch_norm=True,
                     output_activation='sigmoid',
-                    predict = False
+                    predict = False)
+
 network.to(device)
 # set model to train mode
 network.train()
@@ -177,6 +178,11 @@ loss = CombinedLosses(losses=(
     weigh_losses=np.array([0.2, 0.3, 0.5])
 )
 
+
+#loss = CombinedLosses(losses=(WeightMatrixWeightedBCELoss(((0.3, 0.7),), weigh_with_matrix_sum=False)),
+    #y_pred_channels=(np.s_[:1]),
+    #y_true_channels=(np.s_[:]),
+    #weigh_losses=np.array([0.2]))
 sum_train_loss = 0
 best_val_loss = None
 
