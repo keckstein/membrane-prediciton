@@ -154,7 +154,7 @@ network = PiledUnet(n_nets = 3,
                     ),
                     batch_norm=True,
                     output_activation='sigmoid',
-                    predict = True)
+                    predict = False
 network.to(device)
 # set model to train mode
 network.train()
