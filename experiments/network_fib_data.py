@@ -4,7 +4,6 @@ import torch.nn as nn
 # from torch import cat
 import torch.optim as optim
 import sys
-import matplotlib.pyplot as plt
 
 # Choose the correct repo path
 # sys.path.append('/Users/katharinaeckstein/Documents/source_code/pytorch_membrane_net/pytorch_tools/')
@@ -14,25 +13,25 @@ import h5py
 # import torch.utils.tensorboard as tb
 from torch.utils.tensorboard import SummaryWriter
 import datetime
-from loss_function import WeightMatrixWeightedBCELoss
+from functions_classes.loss_function import WeightMatrixWeightedBCELoss
 
 # Choose correct data location
 # filepath_raw_channels = '/Users/katharinaeckstein/Documents/EMBL/Files/raw_image.h5'
 # filepath_gt_channels = '/Users/katharinaeckstein/Documents/EMBL/Files/mem_gt.h5'
 # filepath_raw_channels_test = '/Users/katharinaeckstein/Documents/EMBL/Files/raw_image_test_crop.h5'
 # ilepath_gt_channels_test ='/Users/katharinaeckstein/Documents/EMBL/Files/mem_gt_test_crop.h5'
-#filepath_raw_channels = '/g/schwab/eckstein/gt/raw_image.h5'
-#filepath_gt_channels = '/g/schwab/eckstein/gt/mem_gt.h5'
-#filepath_mask = '/g/schwab/eckstein/gt/mem_gt_mask.h5'
+# filepath_raw_channels = '/g/schwab/eckstein/gt/raw_image.h5'
+# filepath_gt_channels = '/g/schwab/eckstein/gt/mem_gt.h5'
+# filepath_mask = '/g/schwab/eckstein/gt/mem_gt_mask.h5'
 
 
-filepath_raw_train ='/g/schwab/hennies/phd_project/image_analysis/psp_full_experiments/boundary_raw_and_gt/raw.h5'
-filepath_gt_train ='/g/schwab/hennies/phd_project/image_analysis/psp_full_experiments/boundary_raw_and_gt/gt_mem.h5'
+filepath_raw_train = '/g/schwab/hennies/phd_project/image_analysis/psp_full_experiments/boundary_raw_and_gt/raw.h5'
+filepath_gt_train = '/g/schwab/hennies/phd_project/image_analysis/psp_full_experiments/boundary_raw_and_gt/gt_mem.h5'
 filepath_mask_train = '/g/schwab/hennies/phd_project/image_analysis/psp_full_experiments/boundary_raw_and_gt/gt_mask_organelle_insides_erosion3_boudary3.h5'
 
-filepath_raw_val ='/g/schwab/hennies/phd_project/image_analysis/psp_full_experiments/boundary_raw_and_gt/val_raw_512.h5'
-filepath_gt_val ='/g/schwab/hennies/phd_project/image_analysis/psp_full_experiments/boundary_raw_and_gt/val_gt_mem.h5'
-filepath_mask_val ='/g/schwab/hennies/phd_project/image_analysis/psp_full_experiments/boundary_raw_and_gt/val_gt_mask_organelle_insides_erosion3.h5'
+filepath_raw_val = '/g/schwab/hennies/phd_project/image_analysis/psp_full_experiments/boundary_raw_and_gt/val_raw_512.h5'
+filepath_gt_val = '/g/schwab/hennies/phd_project/image_analysis/psp_full_experiments/boundary_raw_and_gt/val_gt_mem.h5'
+filepath_mask_val = '/g/schwab/hennies/phd_project/image_analysis/psp_full_experiments/boundary_raw_and_gt/val_gt_mask_organelle_insides_erosion3.h5'
 
 raw_train = h5py.File(filepath_raw_train, 'r')['data'][:]
 gt_train = h5py.File(filepath_gt_train, 'r')['data'][:]
@@ -42,8 +41,6 @@ raw_val = h5py.File(filepath_raw_val, 'r')['data'][:]
 gt_val = h5py.File(filepath_gt_val, 'r')['data'][:]
 mask_val = h5py.File(filepath_mask_val, 'r')['data'][:]
 
-
-
 print(f'raw_train.shape = {raw_train.shape}')
 print(f'gt_train.shape = {gt_train.shape}')
 print(f'mask_train.shape = {mask_train.shape}')
@@ -52,8 +49,8 @@ print(f'gt_val.shape = {gt_val.shape}')
 print(f'mask_val.shape = {mask_val.shape}')
 
 train_gen = parallel_data_generator(
-    raw_channels =[[raw_train]],
-    gt_channels =[[gt_train, mask_train]],
+    raw_channels=[[raw_train]],
+    gt_channels=[[gt_train, mask_train]],
     spacing=(64, 64, 64),  # (32, 32, 32),  For testing, I increased the grid spacing, speeds things up for now
     area_size=[raw_train.shape],
     # Can now be a tuple of a shape for each input volume        areas_and_spacings=None,
@@ -93,7 +90,7 @@ val_gen = parallel_data_generator(
     raw_channels=[[raw_val]],
     gt_channels=[[gt_val, mask_val]],
     spacing=(64, 64, 64),
-    area_size= [gt_val.shape],
+    area_size=[gt_val.shape],
     target_shape=(64, 64, 64),
     gt_target_shape=(64, 64, 64),
     stop_after_epoch=False,
@@ -233,18 +230,16 @@ network = network()
 # set model to train mode
 network.train()
 
-#tensorboard
-#example_input = torch.rand(1, 1, 64, 64, 64)
+# tensorboard
+# example_input = torch.rand(1, 1, 64, 64, 64)
 writer = SummaryWriter('runs/figures/' + datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))
-#writer.add_graph(network, example_input, verbose=True)  # graph with network structure, verbose = True prints result
-#writer.flush()
+# writer.add_graph(network, example_input, verbose=True)  # graph with network structure, verbose = True prints result
+# writer.flush()
 
 # optimizer
 optimizer = optim.Adam(network.parameters(), lr=0.001)
 # define loss function
-loss = WeightMatrixWeightedBCELoss([[0.5,0.5]])
-
-
+loss = WeightMatrixWeightedBCELoss([[0.5, 0.5]])
 
 sum_train_loss = 0
 best_val_loss = None
@@ -252,52 +247,52 @@ best_val_loss = None
 i = 0
 # training loop
 for x, y, epoch, n, loe in train_gen:
-    #network.train()
+    # network.train()
     # in your training loop:
-    #optimizer.zero_grad()  # zero the gradient buffers
+    # optimizer.zero_grad()  # zero the gradient buffers
     network.train()
     optimizer.zero_grad()
     x = torch.tensor(np.moveaxis(x, 4, 1), dtype=torch.float32)
     y = torch.tensor(np.moveaxis(y, 4, 1), dtype=torch.float32)
 
+    if y[0, 1, :].detach().numpy().max():
+        i += 1
 
-    #if y[0,1,:].detach().numpy().max():
-        #i +=1
+        # with h5py.File(f'/g/schwab/eckstein/train_data/x_iteration{epoch}_{n}.h5', mode='w') as f:
+        # f.create_dataset('data', data=x[0][0], compression='gzip')
 
-        #with h5py.File(f'/g/schwab/eckstein/train_data/x_iteration{epoch}_{n}.h5', mode='w') as f:
-            #f.create_dataset('data', data=x[0][0], compression='gzip')
+        # with h5py.File(f'/g/schwab/eckstein/train_data/y_iteration{epoch}_{n}.h5', mode='w') as f:
+        # f.create_dataset('data', data=y[0][0], compression='gzip')
 
-        #with h5py.File(f'/g/schwab/eckstein/train_data/y_iteration{epoch}_{n}.h5', mode='w') as f:
-            #f.create_dataset('data', data=y[0][0], compression='gzip')
+        # with h5py.File(f'/g/schwab/eckstein/train_data/mask_iteration{epoch}_{n}.h5', mode='w') as f:
+        # f.create_dataset('data', data=y[0][1], compression='gzip')
 
-        #with h5py.File(f'/g/schwab/eckstein/train_data/mask_iteration{epoch}_{n}.h5', mode='w') as f:
-            #f.create_dataset('data', data=y[0][1], compression='gzip')
+        output = network(x)
 
-    output = network(x)
+        train_loss = loss(output, y)
 
-    train_loss = loss(output, y)
+        sum_train_loss += train_loss.item()
+        train_loss.backward()
+        optimizer.step()
 
-    sum_train_loss += train_loss.item()
-    train_loss.backward()
-    optimizer.step()
+        print('Train loss for iteration: ', train_loss)
+        print('Total train loss divided by number of iterations:', (sum_train_loss / i))
+        print(f'Current epoch: {epoch}')
+        print(f'Iteration within epoch: {n}')
+        print(f'Is last iteration of this epoch: {loe}')
+        # print(f'x.shape = {x.shape}')
+        # print(f'y.shape = {y.shape}')
 
-    print('Train loss for iteration: ', train_loss)
-    print('Total train loss divided by number of iterations:', (sum_train_loss / (n+1)))
-    print(f'Current epoch: {epoch}')
-    print(f'Iteration within epoch: {n}')
-    print(f'Is last iteration of this epoch: {loe}')
-        #print(f'x.shape = {x.shape}')
-        #print(f'y.shape = {y.shape}')
-
-        # validation
+    # validation
     if loe:
         # plot train loss for epoch
-        train_loss_epoch = (sum_train_loss / (n+1))
+        train_loss_epoch = (sum_train_loss / i)
+        # train_loss_epoch = (sum_train_loss / (n+1))
         writer.add_scalar('train_loss', train_loss_epoch, epoch)
         writer.flush()
         print('Train loss for epoch: ', train_loss_epoch)
         sum_train_loss = 0
-        #i=0
+        i = 0
 
         with torch.no_grad():
             network.eval()
@@ -306,55 +301,53 @@ for x, y, epoch, n, loe in train_gen:
             acc = 0
             val_acc = 0
             val_output = 0
-            #j=0
+            j=0
             for x_val, y_val, val_epoch, val_n, val_loe in val_gen:
                 x_val = torch.tensor(np.moveaxis(x_val, 4, 1), dtype=torch.float32)
                 val_output = network(x_val)
                 y_val = torch.tensor(np.moveaxis(y_val, 4, 1), dtype=torch.float32)
 
-                #if y_val[0, 1, :].detach().numpy().max():
-                    #j+=1
-                    #with h5py.File(f'/g/schwab/eckstein/val_output/y_val_iteration{epoch}{val_n}.h5', mode ='w') as f:
-                        #f.create_dataset('data', data = y_val[0][0], compression ='gzip' )
+                if y_val[0, 1, :].detach().numpy().max():
+                    j += 1
+                    # with h5py.File(f'/g/schwab/eckstein/val_output/y_val_iteration{epoch}{val_n}.h5', mode ='w') as f:
+                    # f.create_dataset('data', data = y_val[0][0], compression ='gzip' )
 
-                    #with h5py.File(f'/g/schwab/eckstein/val_output/val_mask_iteration{epoch}{val_n}.h5', mode ='w') as f:
-                        #f.create_dataset('data', data = y_val[0][1], compression ='gzip' )
+                    # with h5py.File(f'/g/schwab/eckstein/val_output/val_mask_iteration{epoch}{val_n}.h5', mode ='w') as f:
+                    # f.create_dataset('data', data = y_val[0][1], compression ='gzip' )
 
-                    #with h5py.File(f'/g/schwab/eckstein/val_output/val_output_iteration{epoch}{val_n}.h5', mode ='w') as f:
-                        #f.create_dataset('data', data = val_output[0][0], compression ='gzip' )
+                    # with h5py.File(f'/g/schwab/eckstein/val_output/val_output_iteration{epoch}{val_n}.h5', mode ='w') as f:
+                    # f.create_dataset('data', data = val_output[0][0], compression ='gzip' )
 
+                    # compute loss
+                    validation_loss = loss(val_output, y_val)
 
-                # compute loss
-                validation_loss = loss(val_output, y_val)
+                    # print(f'Validation loss for iteration {j}: ', validation_loss)
+                    sum_loss += validation_loss.item()
+                    # print('Total validation loss divided by number of iterations:', (sum_loss / j))
 
-                #print(f'Validation loss for iteration {j}: ', validation_loss)
-                sum_loss += validation_loss.item()
-                #print('Total validation loss divided by number of iterations:', (sum_loss / j))
+                    # compute accuracy
+                    total_n = 262144
+                    correct_n = torch.count_nonzero(((val_output[0, 0, :] > 0.5) == (y_val[0, 0, :] == 1)))
 
-                # compute accuracy
-                total_n = 262144
-                correct_n = torch.count_nonzero(((val_output[0,0,:] < 0.5) == (y_val[0,0,:] == 0)))
+                    # correct_n = torch.sum(((val_output[0,0,:] > 0.5) == (y_val[0,0,:] == 1))).float()
 
-                #correct_n = torch.sum(((val_output[0,0,:] > 0.5) == (y_val[0,0,:] == 1))).float()
-
-                #print('Correctly predicted: ', correct_n)
-                acc += (correct_n.item() / total_n)
-                #print(correct_n.item() / total_n)
-                #print(acc)
-
+                    # print('Correctly predicted: ', correct_n)
+                    acc += (correct_n.item() / total_n)
+                # print(correct_n.item() / total_n)
+                # print(acc)
 
                 # compute validation loss
-                #if not val_loe:
+                # if not val_loe:
                 #   continue
 
                 if val_loe:
 
-                    print(val_n+1)
+                    print(val_n + 1)
                     print(val_epoch)
-                    val_loss = sum_loss / (val_n+1)
+                    val_loss = sum_loss / j
                     print('Validation loss: ', val_loss)
                     # compute accuracy
-                    val_acc = acc / (val_n+1)
+                    val_acc = acc / j
                     print('Validation accuracy: ', val_acc)
 
                     writer.add_scalar('val_accuracy', val_acc, val_epoch)
@@ -367,7 +360,6 @@ for x, y, epoch, n, loe in train_gen:
                     if best_val_loss is None or val_loss < best_val_loss:
                         best_val_loss = val_loss
                         torch.save(network.state_dict(), f'/g/schwab/eckstein/code/models/result{epoch:04d}.h5')
-                        break
+                    break
 
 writer.close()
-

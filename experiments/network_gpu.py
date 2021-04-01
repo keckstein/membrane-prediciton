@@ -16,6 +16,9 @@ from torch.utils.tensorboard import SummaryWriter
 import datetime
 from functions_classes.loss_function import WeightMatrixWeightedBCELoss
 
+
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
 # Choose correct data location
 # filepath_raw_channels = '/Users/katharinaeckstein/Documents/EMBL/Files/raw_image.h5'
 # filepath_gt_channels = '/Users/katharinaeckstein/Documents/EMBL/Files/mem_gt.h5'
@@ -68,6 +71,8 @@ mask_2 = h5py.File(filepath_mask_2, 'r')['data'][:]*255
 mask_3 = h5py.File(filepath_mask_3, 'r')['data'][:]*255
 mask_4 = h5py.File(filepath_mask_4, 'r')['data'][:]*255
 mask_5 = h5py.File(filepath_mask_5, 'r')['data'][:]*255
+
+
 
 print(f'raw1.shape = {raw_1.shape}')
 print(f'raw2.shape = {raw_2.shape}')
@@ -254,6 +259,7 @@ class network(nn.Module):
 
 # model
 network = network()
+network.to(device)
 # set model to train mode
 network.train()
 
@@ -264,7 +270,7 @@ writer = SummaryWriter('runs/figures/' + datetime.datetime.now().strftime("%Y%m%
 #writer.flush()
 
 # optimizer
-optimizer = optim.Adam(network.parameters(), lr=0.0001)
+optimizer = optim.Adam(network.parameters(), lr=0.001)
 # define loss function
 loss = WeightMatrixWeightedBCELoss([[0.5,0.5]])
 
@@ -281,10 +287,10 @@ for x, y, epoch, n, loe in train_gen:
     # optimizer.zero_grad()  # zero the gradient buffers
     network.train()
     optimizer.zero_grad()
-    x = torch.tensor(np.moveaxis(x, 4, 1), dtype=torch.float32)
-    y = torch.tensor(np.moveaxis(y, 4, 1), dtype=torch.float32)
+    x = torch.tensor(np.moveaxis(x, 4, 1), dtype=torch.float32).to(device)
+    y = torch.tensor(np.moveaxis(y, 4, 1), dtype=torch.float32).to(device)
 
-    if y[0, 1, :].detach().numpy().max():
+    if y[0, 1, :].cpu().detach().numpy().max():
         i += 1
 
         # with h5py.File(f'/g/schwab/eckstein/train_data/x_iteration{epoch}_{n}.h5', mode='w') as f:
@@ -332,11 +338,11 @@ for x, y, epoch, n, loe in train_gen:
             val_output = 0
             j=0
             for x_val, y_val, val_epoch, val_n, val_loe in val_gen:
-                x_val = torch.tensor(np.moveaxis(x_val, 4, 1), dtype=torch.float32)
+                x_val = torch.tensor(np.moveaxis(x_val, 4, 1), dtype=torch.float32).to(device)
                 val_output = network(x_val)
-                y_val = torch.tensor(np.moveaxis(y_val, 4, 1), dtype=torch.float32)
+                y_val = torch.tensor(np.moveaxis(y_val, 4, 1), dtype=torch.float32).to(device)
 
-                if y_val[0, 1, :].detach().numpy().max():
+                if y_val[0, 1, :].cpu().detach().numpy().max():
                     j += 1
                     # with h5py.File(f'/g/schwab/eckstein/val_output/y_val_iteration{epoch}{val_n}.h5', mode ='w') as f:
                     # f.create_dataset('data', data = y_val[0][0], compression ='gzip' )
@@ -388,7 +394,7 @@ for x, y, epoch, n, loe in train_gen:
                     # save model if val_loss is improved
                     if best_val_loss is None or val_loss < best_val_loss:
                         best_val_loss = val_loss
-                        torch.save(network.state_dict(), f'/g/schwab/eckstein/code/models/unet3d_tomo/result{epoch:04d}.h5')
+                        torch.save(network.state_dict(), f'/g/schwab/eckstein/code/models/unet3d_tomo/gpu/result{epoch:04d}.h5')
                     break
 
 writer.close()

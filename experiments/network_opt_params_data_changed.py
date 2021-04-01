@@ -16,6 +16,9 @@ from torch.utils.tensorboard import SummaryWriter
 import datetime
 from functions_classes.loss_function import WeightMatrixWeightedBCELoss
 
+
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
 # Choose correct data location
 # filepath_raw_channels = '/Users/katharinaeckstein/Documents/EMBL/Files/raw_image.h5'
 # filepath_gt_channels = '/Users/katharinaeckstein/Documents/EMBL/Files/mem_gt.h5'
@@ -30,12 +33,6 @@ filepath_raw_2='/g/schwab/eckstein/gt/data_split/raw_split/raw_1.h5'
 filepath_raw_3='/g/schwab/eckstein/gt/data_split/raw_split/raw_2.h5'
 filepath_raw_4='/g/schwab/eckstein/gt/data_split/raw_split/raw_3.h5'
 filepath_raw_5='/g/schwab/eckstein/gt/data_split/raw_split/raw_4.h5'
-
-filepath_gt_1='/g/schwab/eckstein/gt/data_split/gt_split/gt_0.h5'
-filepath_gt_2='/g/schwab/eckstein/gt/data_split/gt_split/gt_1.h5'
-filepath_gt_3='/g/schwab/eckstein/gt/data_split/gt_split/gt_2.h5'
-filepath_gt_4='/g/schwab/eckstein/gt/data_split/gt_split/gt_3.h5'
-filepath_gt_5='/g/schwab/eckstein/gt/data_split/gt_split/gt_4.h5'
 
 filepath_gt_1='/g/schwab/eckstein/gt/data_split/gt_split/gt_0.h5'
 filepath_gt_2='/g/schwab/eckstein/gt/data_split/gt_split/gt_1.h5'
@@ -69,6 +66,8 @@ mask_3 = h5py.File(filepath_mask_3, 'r')['data'][:]*255
 mask_4 = h5py.File(filepath_mask_4, 'r')['data'][:]*255
 mask_5 = h5py.File(filepath_mask_5, 'r')['data'][:]*255
 
+
+
 print(f'raw1.shape = {raw_1.shape}')
 print(f'raw2.shape = {raw_2.shape}')
 print(f'raw3.shape = {raw_3.shape}')
@@ -76,10 +75,10 @@ print(f'raw4.shape = {raw_4.shape}')
 print(f'raw5.shape = {raw_5.shape}')
 
 train_gen = parallel_data_generator(
-    raw_channels =[[raw_3],[raw_4],[raw_5]],
-    gt_channels =[[gt_3, mask_3],[gt_4, mask_4],[gt_5, mask_5]],
+    raw_channels =[[raw_1],[raw_3],[raw_5]],
+    gt_channels =[[gt_1, mask_1],[gt_3, mask_3],[gt_5, mask_5]],
     spacing=(64, 64, 64),  # (32, 32, 32),  For testing, I increased the grid spacing, speeds things up for now
-    area_size=[raw_3.shape,raw_4.shape, raw_5.shape],
+    area_size=[raw_1.shape,raw_3.shape, raw_5.shape],
     # Can now be a tuple of a shape for each input volume        areas_and_spacings=None,
     target_shape=(64, 64, 64),
     gt_target_shape=(64, 64, 64),
@@ -114,10 +113,10 @@ train_gen = parallel_data_generator(
 )
 
 val_gen = parallel_data_generator(
-    raw_channels=[[raw_1],[raw_2]],
-    gt_channels=[[gt_1, mask_1],[gt_2, mask_2]],
+    raw_channels=[[raw_2],[raw_4]],
+    gt_channels=[[gt_2, mask_2],[gt_4, mask_4]],
     spacing=(64, 64, 64),
-    area_size= [raw_3.shape,raw_4.shape],
+    area_size= [raw_2.shape,raw_4.shape],
     target_shape=(64, 64, 64),
     gt_target_shape=(64, 64, 64),
     stop_after_epoch=False,
@@ -254,19 +253,20 @@ class network(nn.Module):
 
 # model
 network = network()
+network.to(device)
 # set model to train mode
 network.train()
 
 #tensorboard
 #example_input = torch.rand(1, 1, 64, 64, 64)
-writer = SummaryWriter('runs/figures/' + datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))
+writer = SummaryWriter('runs/figures/opt_params_data_changed' + datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))
 #writer.add_graph(network, example_input, verbose=True)  # graph with network structure, verbose = True prints result
 #writer.flush()
 
 # optimizer
-optimizer = optim.Adam(network.parameters(), lr=0.0001)
+optimizer = optim.Adam(network.parameters(), lr=0.0001, betas=(0.9, 0.999), weight_decay=1e-5, eps=1e-7)
 # define loss function
-loss = WeightMatrixWeightedBCELoss([[0.5,0.5]])
+loss = WeightMatrixWeightedBCELoss([[0.3,0.7]])
 
 
 
@@ -281,10 +281,10 @@ for x, y, epoch, n, loe in train_gen:
     # optimizer.zero_grad()  # zero the gradient buffers
     network.train()
     optimizer.zero_grad()
-    x = torch.tensor(np.moveaxis(x, 4, 1), dtype=torch.float32)
-    y = torch.tensor(np.moveaxis(y, 4, 1), dtype=torch.float32)
+    x = torch.tensor(np.moveaxis(x, 4, 1), dtype=torch.float32).to(device)
+    y = torch.tensor(np.moveaxis(y, 4, 1), dtype=torch.float32).to(device)
 
-    if y[0, 1, :].detach().numpy().max():
+    if y[0, 1, :].cpu().detach().numpy().max():
         i += 1
 
         # with h5py.File(f'/g/schwab/eckstein/train_data/x_iteration{epoch}_{n}.h5', mode='w') as f:
@@ -332,11 +332,11 @@ for x, y, epoch, n, loe in train_gen:
             val_output = 0
             j=0
             for x_val, y_val, val_epoch, val_n, val_loe in val_gen:
-                x_val = torch.tensor(np.moveaxis(x_val, 4, 1), dtype=torch.float32)
+                x_val = torch.tensor(np.moveaxis(x_val, 4, 1), dtype=torch.float32).to(device)
                 val_output = network(x_val)
-                y_val = torch.tensor(np.moveaxis(y_val, 4, 1), dtype=torch.float32)
+                y_val = torch.tensor(np.moveaxis(y_val, 4, 1), dtype=torch.float32).to(device)
 
-                if y_val[0, 1, :].detach().numpy().max():
+                if y_val[0, 1, :].cpu().detach().numpy().max():
                     j += 1
                     # with h5py.File(f'/g/schwab/eckstein/val_output/y_val_iteration{epoch}{val_n}.h5', mode ='w') as f:
                     # f.create_dataset('data', data = y_val[0][0], compression ='gzip' )
@@ -388,7 +388,7 @@ for x, y, epoch, n, loe in train_gen:
                     # save model if val_loss is improved
                     if best_val_loss is None or val_loss < best_val_loss:
                         best_val_loss = val_loss
-                        torch.save(network.state_dict(), f'/g/schwab/eckstein/code/models/unet3d_tomo/result{epoch:04d}.h5')
+                        torch.save(network.state_dict(), f'/g/schwab/eckstein/code/models/unet3d_tomo/opt_params_val_train_changed/result{epoch:04d}.h5')
                     break
 
 writer.close()

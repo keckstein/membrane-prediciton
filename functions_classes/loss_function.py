@@ -1,9 +1,9 @@
 import torch as t
 import torch.nn as nn
 
-class WeightMatrixWeightedBCE(nn.Module):
+class WeightMatrixWeightedBCELoss(nn.Module):
     def __init__(self, class_weights, weigh_with_matrix_sum =False):
-        super(WeightMatrixWeightedBCE, self).__init__()
+        super(WeightMatrixWeightedBCELoss, self).__init__()
 
         self.class_weights = class_weights
         self.weigh_with_matrix_sum = weigh_with_matrix_sum
@@ -14,9 +14,10 @@ class WeightMatrixWeightedBCE(nn.Module):
         cw = self.class_weights
         num_channels = y_pred.shape[1]
 
+
         assert len(cw) == num_channels, 'Class weight sets and number of channels have to match!'
         _epsilon = 1e-7
-        y_pred = t.clamp(y_pred, _epsilon, 1-_epsilon)
+        y_pred = t.clamp(y_pred, _epsilon, 1 - _epsilon)
 
         w = y_gt[:,-1,:][:,None,:]
         loss = 0.
@@ -24,7 +25,7 @@ class WeightMatrixWeightedBCE(nn.Module):
             for c in range(num_channels):
                 y_gt_c = y_gt[:,c,:][:,None,:]
                 y_pred_c = y_pred[:,c,:][:,None,:]
-                loss += w * -(cw[c][1] * y_gt_c * t.log(y_pred_c) + cw[c][0] * (1.0-y_gt_c) * t.log(-y_pred_c + 1.0))
+                loss += w * -(cw[c][1] * y_gt_c * t.log(y_pred_c) + cw[c][0] * (1.0 - y_gt_c) * t.log(- y_pred_c + 1.0))
 
         else:
             for c in range(num_channels):
@@ -33,5 +34,4 @@ class WeightMatrixWeightedBCE(nn.Module):
                 loss += t.sum(w) / w.nelement() * w * -(cw[c][1] * y_gt_c * t.log(y_pred_c) + cw[c][0] * (1.0 - y_gt_c) * t.log(- y_pred_c + 1.0))
 
         return t.mean(loss)
-
 

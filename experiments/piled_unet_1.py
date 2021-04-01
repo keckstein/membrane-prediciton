@@ -41,11 +41,11 @@ filepath_gt_3='/g/schwab/eckstein/gt/data_split/gt_split/gt_2.h5'
 filepath_gt_4='/g/schwab/eckstein/gt/data_split/gt_split/gt_3.h5'
 filepath_gt_5='/g/schwab/eckstein/gt/data_split/gt_split/gt_4.h5'
 
-filepath_mask_1='/g/schwab/eckstein/gt/data_split/mask_split/mask_0.h5'
-filepath_mask_2='/g/schwab/eckstein/gt/data_split/mask_split/mask_1.h5'
-filepath_mask_3='/g/schwab/eckstein/gt/data_split/mask_split/mask_2.h5'
-filepath_mask_4='/g/schwab/eckstein/gt/data_split/mask_split/mask_3.h5'
-filepath_mask_5='/g/schwab/eckstein/gt/data_split/mask_split/mask_4.h5'
+filepath_mask_1='/g/schwab/eckstein/gt/data_split/mask_split_dilate_13/mask_0.h5'
+filepath_mask_2='/g/schwab/eckstein/gt/data_split/mask_split_dilate_13/mask_1.h5'
+filepath_mask_3='/g/schwab/eckstein/gt/data_split/mask_split_dilate_13/mask_2.h5'
+filepath_mask_4='/g/schwab/eckstein/gt/data_split/mask_split_dilate_13/mask_3.h5'
+filepath_mask_5='/g/schwab/eckstein/gt/data_split/mask_split_dilate_13/mask_4.h5'
 
 
 
@@ -131,30 +131,50 @@ val_gen = parallel_data_generator(
     yield_epoch_info=True
 )
 
-
-
 # model
-network = PiledUnet(n_nets = 3,
+"""network = PiledUnet(n_nets = 3,
                     in_channels=1,
                     out_channels=[1,1,1],
-                    filter_sizes_down = (
-                        #((4, 8), (8, 16), (16, 32)),
-                        #((8, 16), (16, 32), (32, 64)),
+                    filter_sizes_down =(
+                        ((4, 8), (8, 16), (16, 32)),
+                        ((8, 16), (16, 32), (32, 64)),
                         ((32, 64), (64, 128), (128, 256))
                     ),
                     filter_sizes_bottleneck=(
-                        #(32, 64),
-                        #(64, 128),
+                        (32, 64),
+                        (64, 128),
                         (256, 512)
                     ),
                     filter_sizes_up = (
-                        #((32, 32), (16, 16), (8, 8)),
-                        #((64, 64), (32, 32), (16, 16)),
+                        ((32, 32), (16, 16), (8, 8)),
+                        ((64, 64), (32, 32), (16, 16)),
                         ((256, 256), (128, 128), (64, 64))
+                    ),
+                    batch_norm=None,
+                    output_activation='sigmoid',
+                    predict = False)"""
+
+network = PiledUnet(n_nets = 3,
+                    in_channels=1,
+                    out_channels=[1,1,1],
+                    filter_sizes_down =(
+                        ((8, 16), (16, 32), (32, 64)),
+                        ((8, 16), (16, 32), (32, 64)),
+                        ((8, 16), (16, 32), (32, 64))
+                    ),
+                    filter_sizes_bottleneck=(
+                        (64, 128),
+                        (64, 128),
+                        (64, 128)
+                    ),
+                    filter_sizes_up = (
+                        ((64, 64), (32, 32), (16, 16)),
+                        ((64, 64), (32, 32), (16, 16)),
+                        ((64, 64), (32, 32), (16, 16))
                     ),
                     batch_norm=True,
                     output_activation='sigmoid',
-                    predict = False)
+                   )
 
 network.to(device)
 # set model to train mode
@@ -169,6 +189,7 @@ writer = SummaryWriter('runs/figures/piled_unet_1_' + datetime.datetime.now().st
 # optimizer
 optimizer = optim.Adam(network.parameters(), lr=0.0001, betas=(0.9, 0.999), weight_decay=1e-5, eps=1e-7)
 # define loss function
+
 loss = CombinedLosses(losses=(
         WeightMatrixWeightedBCELoss(((0.1, 0.9),), weigh_with_matrix_sum=False),
         WeightMatrixWeightedBCELoss(((0.2, 0.8),), weigh_with_matrix_sum=False),
@@ -179,10 +200,7 @@ loss = CombinedLosses(losses=(
 )
 
 
-#loss = CombinedLosses(losses=(WeightMatrixWeightedBCELoss(((0.3, 0.7),), weigh_with_matrix_sum=False)),
-    #y_pred_channels=(np.s_[:1]),
-    #y_true_channels=(np.s_[:]),
-    #weigh_losses=np.array([0.2]))
+
 sum_train_loss = 0
 best_val_loss = None
 
