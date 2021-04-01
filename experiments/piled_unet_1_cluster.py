@@ -181,7 +181,7 @@ network.train()
 
 #tensorboard
 #example_input = torch.rand(1, 1, 64, 64, 64)
-writer = SummaryWriter('/g/schwab/eckstein/tensorboard/piled_unet_1_' + datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))
+writer = SummaryWriter('/g/schwab/eckstein/scripts/tensorboard/piled_unet_1_' + datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))
 #writer.add_graph(network, example_input, verbose=True)  # graph with network structure, verbose = True prints result
 #writer.flush()
 
