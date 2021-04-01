@@ -11,7 +11,6 @@ sys.path.append('/g/schwab/hennies/src/github/pytorch_membrane_net/')
 from pytorch_tools.piled_unets import PiledUnet
 from pytorch_tools.data_generation import parallel_data_generator
 from pytorch_tools.losses import CombinedLosses
-from functions_classes.loss_function import WeightMatrixWeightedBCELoss
 import h5py
 # import torch.utils.tensorboard as tb
 from torch.utils.tensorboard import SummaryWriter
