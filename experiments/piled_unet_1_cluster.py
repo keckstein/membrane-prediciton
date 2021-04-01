@@ -16,7 +16,7 @@ import h5py
 # import torch.utils.tensorboard as tb
 from torch.utils.tensorboard import SummaryWriter
 import datetime
-pytorch_tools.losses import WeightMatrixWeightedBCE
+from pytorch_tools.losses import WeightMatrixWeightedBCE
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
