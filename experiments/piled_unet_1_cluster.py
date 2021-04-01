@@ -106,7 +106,7 @@ train_gen = parallel_data_generator(
     shuffle=True,
     add_pad_mask=False,
     noise_load_dict=None,
-    n_workers=1,
+    n_workers=2,
     n_workers_noise=1,
     noise_on_channels=None,
     yield_epoch_info=True
@@ -125,7 +125,7 @@ val_gen = parallel_data_generator(
     batch_size=1,
     shuffle=False,
     add_pad_mask=False,
-    n_workers=1,
+    n_workers=2,
     gt_target_channels=None,
     yield_epoch_info=True
 )
@@ -181,7 +181,7 @@ network.train()
 
 #tensorboard
 #example_input = torch.rand(1, 1, 64, 64, 64)
-writer = SummaryWriter('runs/figures/piled_unet_1_' + datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))
+writer = SummaryWriter('/g/schwab/eckstein/tensorboard/piled_unet_1_' + datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))
 #writer.add_graph(network, example_input, verbose=True)  # graph with network structure, verbose = True prints result
 #writer.flush()
 
