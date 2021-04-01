@@ -6,8 +6,8 @@ import torch.optim as optim
 import sys
 
 # Choose the correct repo path
-sys.path.append('/home/eckstein/code/pytorch_membrane_net/')
-#sys.path.append('/g/schwab/hennies/src/github/pytorch_membrane_net/')
+#sys.path.append('/home/eckstein/code/pytorch_membrane_net/')
+sys.path.append('/g/schwab/hennies/src/github/pytorch_membrane_net/')
 from pytorch_tools.piled_unets import PiledUnet
 from pytorch_tools.data_generation import parallel_data_generator
 from pytorch_tools.losses import CombinedLosses
@@ -29,7 +29,7 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 #filepath_gt_channels = '/g/schwab/eckstein/gt/mem_gt.h5'
 #filepath_mask = '/g/schwab/eckstein/gt/mem_gt_mask.h5'
 input_filepath_data = '/scratch/eckstein/input_data/gt/data_split/'
-filepath_raw_1=f'{input_filepath_data}raw_split/raw_0.h5'
+filepath_raw_1= f'{input_filepath_data}raw_split/raw_0.h5'
 filepath_raw_2=f'{input_filepath_data}raw_split/raw_1.h5'
 filepath_raw_3=f'{input_filepath_data}raw_split/raw_2.h5'
 filepath_raw_4=f'{input_filepath_data}raw_split/raw_3.h5'
