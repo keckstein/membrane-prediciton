@@ -78,7 +78,7 @@ train_gen = parallel_data_generator(
     raw_channels =[[raw_3[0:54, :, :]]],
     gt_channels =[[gt_3[0:54,:,:], mask_3[0:54, :, :]]],
     spacing=(64, 64, 64),  # (32, 32, 32),  For testing, I increased the grid spacing, speeds things up for now
-    area_size=[(raw_3[0:54]).shape],
+    area_size=[(raw_3[0:54, :, :]).shape],
     # Can now be a tuple of a shape for each input volume        areas_and_spacings=None,
     target_shape=(64, 64, 64),
     gt_target_shape=(64, 64, 64),
@@ -116,7 +116,7 @@ val_gen = parallel_data_generator(
     raw_channels=[[raw_3[54:81, :, :]]],
     gt_channels=[[gt_3[54:81, :, :], mask_3[54:81, :, :]]],
     spacing=(64, 64, 64),
-    area_size= [(raw_3[54:81]).shape],
+    area_size= [(raw_3[54:81, :, :]).shape],
     target_shape=(64, 64, 64),
     gt_target_shape=(64, 64, 64),
     stop_after_epoch=False,
@@ -181,7 +181,7 @@ network.train()
 
 #tensorboard
 #example_input = torch.rand(1, 1, 64, 64, 64)
-writer = SummaryWriter('/g/schwab/eckstein/scripts/tensorboard/piled_unet_2_' + datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))
+writer = SummaryWriter('/g/schwab/eckstein/scripts/tensorboard/piled_unet_2' + datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))
 #writer.add_graph(network, example_input, verbose=True)  # graph with network structure, verbose = True prints result
 #writer.flush()
 
