@@ -106,7 +106,7 @@ train_gen = parallel_data_generator(
     shuffle=True,
     add_pad_mask=False,
     noise_load_dict=None,
-    n_workers=3,
+    n_workers=2,
     n_workers_noise=1,
     noise_on_channels=None,
     yield_epoch_info=True
@@ -125,7 +125,7 @@ val_gen = parallel_data_generator(
     batch_size=1,
     shuffle=False,
     add_pad_mask=False,
-    n_workers=3,
+    n_workers=2,
     gt_target_channels=None,
     yield_epoch_info=True
 )
