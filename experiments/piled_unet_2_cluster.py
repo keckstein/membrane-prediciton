@@ -28,57 +28,57 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 #filepath_gt_channels = '/g/schwab/eckstein/gt/mem_gt.h5'
 #filepath_mask = '/g/schwab/eckstein/gt/mem_gt_mask.h5'
 input_filepath_data = '/scratch/eckstein/input_data/gt/data_split/'
-filepath_raw_1= f'{input_filepath_data}raw_split/raw_0.h5'
-filepath_raw_2=f'{input_filepath_data}raw_split/raw_1.h5'
+#filepath_raw_1= f'{input_filepath_data}raw_split/raw_0.h5'
+#filepath_raw_2=f'{input_filepath_data}raw_split/raw_1.h5'
 filepath_raw_3=f'{input_filepath_data}raw_split/raw_2.h5'
-filepath_raw_4=f'{input_filepath_data}raw_split/raw_3.h5'
-filepath_raw_5=f'{input_filepath_data}raw_split/raw_4.h5'
+#filepath_raw_4=f'{input_filepath_data}raw_split/raw_3.h5'
+#filepath_raw_5=f'{input_filepath_data}raw_split/raw_4.h5'
 
-filepath_gt_1=f'{input_filepath_data}gt_split/gt_0.h5'
-filepath_gt_2=f'{input_filepath_data}gt_split/gt_1.h5'
-filepath_gt_3=f'{input_filepath_data}gt_split/gt_2.h5'
-filepath_gt_4=f'{input_filepath_data}gt_split/gt_3.h5'
-filepath_gt_5=f'{input_filepath_data}gt_split/gt_4.h5'
+#filepath_gt_1=f'{input_filepath_data}gt_split/gt_0.h5'
+#filepath_gt_2=f'{input_filepath_data}gt_split/gt_1.h5'
+filepath_gt_3=f'{input_filepath_data}gt_split_annotation_2/gt_2.h5'
+#filepath_gt_4=f'{input_filepath_data}gt_split/gt_3.h5'
+#filepath_gt_5=f'{input_filepath_data}gt_split/gt_4.h5'
 
-filepath_mask_1=f'{input_filepath_data}mask_split_dilate_13/mask_0.h5'
-filepath_mask_2=f'{input_filepath_data}mask_split_dilate_13/mask_1.h5'
-filepath_mask_3=f'{input_filepath_data}mask_split_dilate_13/mask_2.h5'
-filepath_mask_4=f'{input_filepath_data}mask_split_dilate_13/mask_3.h5'
-filepath_mask_5=f'{input_filepath_data}mask_split_dilate_13/mask_4.h5'
+#filepath_mask_1=f'{input_filepath_data}mask_split_dilate_13/mask_0.h5'
+#filepath_mask_2=f'{input_filepath_data}mask_split_dilate_13/mask_1.h5'
+filepath_mask_3=f'/scratch/eckstein/input_data/gt/raw_gt_mask_new_annotation/block_3/mem_gt_mask_block_3.h5'
+#filepath_mask_4=f'{input_filepath_data}mask_split_dilate_13/mask_3.h5'
+#filepath_mask_5=f'{input_filepath_data}mask_split_dilate_13/mask_4.h5'
 
 
 
-raw_1 = h5py.File(filepath_raw_1, 'r')['data'][:]
-raw_2 = h5py.File(filepath_raw_2, 'r')['data'][:]
+#raw_1 = h5py.File(filepath_raw_1, 'r')['data'][:]
+#raw_2 = h5py.File(filepath_raw_2, 'r')['data'][:]
 raw_3 = h5py.File(filepath_raw_3, 'r')['data'][:]
-raw_4 = h5py.File(filepath_raw_4, 'r')['data'][:]
-raw_5 = h5py.File(filepath_raw_5, 'r')['data'][:]
+#raw_4 = h5py.File(filepath_raw_4, 'r')['data'][:]
+#raw_5 = h5py.File(filepath_raw_5, 'r')['data'][:]
 
-gt_1 = h5py.File(filepath_gt_1, 'r')['data'][:]*255
-gt_2 = h5py.File(filepath_gt_2, 'r')['data'][:]*255
+#gt_1 = h5py.File(filepath_gt_1, 'r')['data'][:]*255
+#gt_2 = h5py.File(filepath_gt_2, 'r')['data'][:]*255
 gt_3 = h5py.File(filepath_gt_3, 'r')['data'][:]*255
-gt_4 = h5py.File(filepath_gt_4, 'r')['data'][:]*255
-gt_5 = h5py.File(filepath_gt_5, 'r')['data'][:]*255
+#gt_4 = h5py.File(filepath_gt_4, 'r')['data'][:]*255
+#gt_5 = h5py.File(filepath_gt_5, 'r')['data'][:]*255
 
-mask_1 = h5py.File(filepath_mask_1, 'r')['data'][:]*255
-mask_2 = h5py.File(filepath_mask_2, 'r')['data'][:]*255
+#mask_1 = h5py.File(filepath_mask_1, 'r')['data'][:]*255
+#mask_2 = h5py.File(filepath_mask_2, 'r')['data'][:]*255
 mask_3 = h5py.File(filepath_mask_3, 'r')['data'][:]*255
-mask_4 = h5py.File(filepath_mask_4, 'r')['data'][:]*255
-mask_5 = h5py.File(filepath_mask_5, 'r')['data'][:]*255
+#mask_4 = h5py.File(filepath_mask_4, 'r')['data'][:]*255
+#mask_5 = h5py.File(filepath_mask_5, 'r')['data'][:]*255
 
 
 
-print(f'raw1.shape = {raw_1.shape}')
-print(f'raw2.shape = {raw_2.shape}')
-print(f'raw3.shape = {raw_3.shape}')
-print(f'raw4.shape = {raw_4.shape}')
-print(f'raw5.shape = {raw_5.shape}')
+#print(f'raw1.shape = {raw_1.shape}')
+#print(f'raw2.shape = {raw_2.shape}')
+#print(f'raw3.shape = {raw_3.shape}')
+#print(f'raw4.shape = {raw_4.shape}')
+#print(f'raw5.shape = {raw_5.shape}')
 
 train_gen = parallel_data_generator(
-    raw_channels =[[raw_1],[raw_3],[raw_5]],
-    gt_channels =[[gt_1, mask_1],[gt_3, mask_3],[gt_5, mask_5]],
+    raw_channels =[[raw_3[0:54, :, :]]],
+    gt_channels =[[gt_3[0:54,:,:], mask_3[0:54, :, :]]],
     spacing=(64, 64, 64),  # (32, 32, 32),  For testing, I increased the grid spacing, speeds things up for now
-    area_size=[raw_1.shape,raw_3.shape, raw_5.shape],
+    area_size=[(raw_3[0:54]).shape],
     # Can now be a tuple of a shape for each input volume        areas_and_spacings=None,
     target_shape=(64, 64, 64),
     gt_target_shape=(64, 64, 64),
@@ -113,8 +113,8 @@ train_gen = parallel_data_generator(
 )
 
 val_gen = parallel_data_generator(
-    raw_channels=[[raw_2],[raw_4]],
-    gt_channels=[[gt_2, mask_2],[gt_4, mask_4]],
+    raw_channels=[[raw_3[54:81, :, :]]],
+    gt_channels=[[gt_3[54:81, :, :], mask_3[54:81, :, :]]],
     spacing=(64, 64, 64),
     area_size= [raw_2.shape,raw_4.shape],
     target_shape=(64, 64, 64),
@@ -157,19 +157,19 @@ network = PiledUnet(n_nets = 3,
                     in_channels=1,
                     out_channels=[1,1,1],
                     filter_sizes_down =(
-                        ((4, 8), (8, 16), (16, 32)),
                         ((8, 16), (16, 32), (32, 64)),
-                        ((32, 64), (64, 128), (128, 256))
+                        ((8, 16), (16, 32), (32, 64)),
+                        ((8, 16), (16, 32), (32, 64))
                     ),
                     filter_sizes_bottleneck=(
-                        (32, 64),
                         (64, 128),
-                        (256, 512)
+                        (64, 128),
+                        (64, 128)
                     ),
                     filter_sizes_up = (
-                        ((32, 32), (16, 16), (8, 8)),
                         ((64, 64), (32, 32), (16, 16)),
-                        ((256, 256), (128, 128), (64, 64))
+                        ((64, 64), (32, 32), (16, 16)),
+                        ((64, 64), (32, 32), (16, 16))
                     ),
                     batch_norm=True,
                     output_activation='sigmoid',
