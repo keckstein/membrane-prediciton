@@ -186,7 +186,7 @@ writer = SummaryWriter('/g/schwab/eckstein/scripts/tensorboard/piled_unet_5_run2
 #writer.flush()
 
 # optimizer
-optimizer = optim.Adam(network.parameters(), lr=0.001, betas=(0.9, 0.999), weight_decay=1e-4, eps=1e-7)
+optimizer = optim.Adam(network.parameters(), lr=0.0001, betas=(0.9, 0.999), weight_decay=1e-4, eps=1e-7)
 # define loss function
 
 loss = CombinedLosses(losses=(
