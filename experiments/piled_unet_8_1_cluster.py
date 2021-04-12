@@ -190,7 +190,7 @@ optimizer = optim.Adam(network.parameters(), lr=0.0001, betas=(0.9, 0.999), weig
 # define loss function
 
 loss = CombinedLosses(losses=(
-        WeightMatrixWeightedBCE(((0.3, 0.7),), weigh_with_matrix_sum=False),
+        WeightMatrixWeightedBCE(((0.2, 0.8),), weigh_with_matrix_sum=False),
         WeightMatrixWeightedBCE(((0.4, 0.6),), weigh_with_matrix_sum=False),
         WeightMatrixWeightedBCE(((0.5, 0.5),), weigh_with_matrix_sum=False)),
     y_pred_channels=(np.s_[:1], np.s_[1:2], np.s_[2:3]),
