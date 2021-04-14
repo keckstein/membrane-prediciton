@@ -96,8 +96,8 @@ train_gen = parallel_data_generator(
         fill_mode='reflect',
         cval=0,
         brightness_range=64,  # test
-        contrast_range=(0.9, 1.2)  # test
-transpose = False
+        contrast_range=(0.9, 1.2), # test
+        transpose = False
     ),
     transform_ratio=0.9,
     batch_size=1,
