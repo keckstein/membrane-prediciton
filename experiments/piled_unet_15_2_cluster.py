@@ -83,21 +83,21 @@ train_gen = parallel_data_generator(
     gt_target_channels=None,
     stop_after_epoch=False,
     aug_dict=dict(
-        rotation_range=180,  # Angle in degrees
-        shear_range=20,  # Angle in degrees
-        zoom_range=[0.8, 1.2],  # [0.75, 1.5]
+        rotation_range=180,
+        shear_range=20,
+        zoom_range=[0.8, 1.2],
         horizontal_flip=True,
         vertical_flip=True,
         depth_flip=True,
-        noise_var_range=1e-1,
-        random_smooth_range=[0.6, 1.5],
+        noise_var_range=0.4,  # test
+        random_smooth_range=None,
         smooth_output_sigma=0,
-        displace_slices_range=2,
+        displace_slices_range=0,
         fill_mode='reflect',
         cval=0,
-        brightness_range=50,
-        contrast_range=(0.5, 2),
-        transpose=True
+        brightness_range=32,  # test
+        contrast_range=(0.9, 1.2)  # test
+transpose = False
     ),
     transform_ratio=0.9,
     batch_size=1,
@@ -306,8 +306,8 @@ for x, y, epoch, n, loe in train_gen:
                     val_acc = acc / j
                     print('Validation accuracy: ', val_acc)
 
-                    #writer.add_scalar('val_accuracy', val_acc, val_epoch)
-                    #writer.flush()
+                    writer.add_scalar('val_accuracy', val_acc, val_epoch)
+                    writer.flush()
                     writer.add_scalar('val_loss', val_loss, val_epoch)
                     writer.flush()
                     val_acc = 0
