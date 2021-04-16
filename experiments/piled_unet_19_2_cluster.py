@@ -75,8 +75,8 @@ mask_3 = h5py.File(filepath_mask_3, 'r')['data'][:] * 255
 train_gen = parallel_data_generator(
     raw_channels=[[raw_3[:, :, 357:772]]],
     gt_channels=[[gt_3[:, :, 357:772], mask_3[:, :, 357:772]]],
-    spacing=(64, 64, 64),  # (32, 32, 32),  For testing, I increased the grid spacing, speeds things up for now
-    area_size=[(raw_3[:, :, 357:772]).shape],
+    spacing=(32,32,32),  # (32, 32, 32),  For testing, I increased the grid spacing, speeds things up for now
+    area_size=[(raw_3[0:64, :, 357:772]).shape],
     # Can now be a tuple of a shape for each input volume        areas_and_spacings=None,
     target_shape=(64, 64, 64),
     gt_target_shape=(64, 64, 64),
@@ -114,7 +114,7 @@ val_gen = parallel_data_generator(
     raw_channels=[[raw_3[:, :, 0:357]]],
     gt_channels=[[gt_3[:, :, 0:357], mask_3[:, :, 0:357]]],
     spacing=(64, 64, 64),
-    area_size=[(raw_3[:, :, 0:357]).shape],
+    area_size=[(raw_3[0:64, :, 0:357]).shape],
     target_shape=(64, 64, 64),
     gt_target_shape=(64, 64, 64),
     stop_after_epoch=False,
@@ -180,7 +180,7 @@ network.train()
 # tensorboard
 # example_input = torch.rand(1, 1, 64, 64, 64)
 writer = SummaryWriter(
-    '/g/schwab/eckstein/scripts/tensorboard/piled_unet_19_run2' + datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))
+    '/g/schwab/eckstein/scripts/tensorboard/piled_unet_19_run2_new' + datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))
 # writer.add_graph(network, example_input, verbose=True)  # graph with network structure, verbose = True prints result
 # writer.flush()
 
@@ -315,7 +315,7 @@ for x, y, epoch, n, loe in train_gen:
                     # save model if val_loss is improved
                     if best_val_loss is None or val_loss < best_val_loss:
                         best_val_loss = val_loss
-                        torch.save(network.state_dict(), f'/scratch/eckstein/models/piled_unet_19_run2/result{epoch:04d}.h5')
+                        torch.save(network.state_dict(), f'/scratch/eckstein/models/piled_unet_19_run2_new/result{epoch:04d}.h5')
                     break
 
 writer.close()
