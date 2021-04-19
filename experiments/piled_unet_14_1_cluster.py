@@ -7,15 +7,16 @@ import sys
 
 # Choose the correct repo path
 # sys.path.append('/home/eckstein/code/pytorch_membrane_net/')
-sys.path.append('/g/schwab/hennies/src/github/pytorch_membrane_net/')
-from pytorch_tools.piled_unets import PiledUnet
-from pytorch_tools.data_generation import parallel_data_generator
-from pytorch_tools.losses import CombinedLosses
+sys.path.append('/g/schwab/eckstein/code/membrane-prediciton/pytorch_membrane_net/')
+
+from pytorch_membrane_net.pytorch_tools.piled_unets import PiledUnet
+from pytorch_membrane_net.pytorch_tools.data_generation import parallel_data_generator
+from pytorch_membrane_net.pytorch_tools.losses import CombinedLosses
 import h5py
 # import torch.utils.tensorboard as tb
 from torch.utils.tensorboard import SummaryWriter
 import datetime
-from pytorch_tools.losses import WeightMatrixWeightedBCE
+from pytorch_membrane_net.pytorch_tools.losses import WeightMatrixWeightedBCE
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -28,6 +29,7 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 # filepath_gt_channels = '/g/schwab/eckstein/gt/mem_gt.h5'
 # filepath_mask = '/g/schwab/eckstein/gt/mem_gt_mask.h5'
 input_filepath_data = '/scratch/eckstein/input_data/gt/data_split/'
+#input_filepath_data ='/g/schwab/eckstein/gt/data_split/'
 # filepath_raw_1= f'{input_filepath_data}raw_split/raw_0.h5'
 # filepath_raw_2=f'{input_filepath_data}raw_split/raw_1.h5'
 filepath_raw_3 = f'{input_filepath_data}raw_split/raw_2.h5'
@@ -37,12 +39,14 @@ filepath_raw_3 = f'{input_filepath_data}raw_split/raw_2.h5'
 # filepath_gt_1=f'{input_filepath_data}gt_split/gt_0.h5'
 # filepath_gt_2=f'{input_filepath_data}gt_split/gt_1.h5'
 filepath_gt_3 = f'/scratch/eckstein/input_data/gt/raw_gt_mask_new_annotation/block_3/erode_13/mem_gt_block_3.h5'
+#filepath_gt_3 = f'{input_filepath_data}gt_split/gt_2.h5'
 # filepath_gt_4=f'{input_filepath_data}gt_split/gt_3.h5'
 # filepath_gt_5=f'{input_filepath_data}gt_split/gt_4.h5'
 
 # filepath_mask_1=f'{input_filepath_data}mask_split_dilate_13/mask_0.h5'
 # filepath_mask_2=f'{input_filepath_data}mask_split_dilate_13/mask_1.h5'
 filepath_mask_3 = f'/scratch/eckstein/input_data/gt/raw_gt_mask_new_annotation/block_3/no_mask_golgi/erode_3/mem_gt_mask_block_3.h5'
+#filepath_mask_3 = f'/g/schwab/eckstein/gt/raw_gt_mask_new_annotation/block_3/no_mask_golgi/erode_3/mem_gt_mask_block_3.h5'
 # filepath_mask_4=f'{input_filepath_data}mask_split_dilate_13/mask_3.h5'
 # filepath_mask_5=f'{input_filepath_data}mask_split_dilate_13/mask_4.h5'
 
@@ -107,7 +111,8 @@ train_gen = parallel_data_generator(
     n_workers=2,
     n_workers_noise=1,
     noise_on_channels=None,
-    yield_epoch_info=True
+    yield_epoch_info=True,
+    displace_positions = 10
 )
 
 val_gen = parallel_data_generator(
@@ -125,7 +130,8 @@ val_gen = parallel_data_generator(
     add_pad_mask=False,
     n_workers=2,
     gt_target_channels=None,
-    yield_epoch_info=True
+    yield_epoch_info=True,
+    displace_positions = 0
 )
 
 # model
@@ -180,7 +186,7 @@ network.train()
 # tensorboard
 # example_input = torch.rand(1, 1, 64, 64, 64)
 writer = SummaryWriter(
-    '/g/schwab/eckstein/scripts/tensorboard/piled_unet_14_run1_new' + datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))
+    '/g/schwab/eckstein/scripts/tensorboard/piled_unet_14_run1_displaced' + datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))
 # writer.add_graph(network, example_input, verbose=True)  # graph with network structure, verbose = True prints result
 # writer.flush()
 
@@ -315,7 +321,7 @@ for x, y, epoch, n, loe in train_gen:
                     # save model if val_loss is improved
                     if best_val_loss is None or val_loss < best_val_loss:
                         best_val_loss = val_loss
-                        torch.save(network.state_dict(), f'/scratch/eckstein/models/piled_unet_14_run1_new/result{epoch:04d}.h5')
+                        torch.save(network.state_dict(), f'/scratch/eckstein/models/piled_unet_14_run1_displaced/result{epoch:04d}.h5')
                     break
 
 writer.close()
