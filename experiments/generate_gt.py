@@ -1,10 +1,9 @@
-from functions_classes.gt_generation import make_gt
-import h5py
-import numpy as np
-input_filepath = '/g/schwab/eckstein/gt/original_raw_gt_mask/MIB Tomo Annotation.model'
-result_folder = '/g/schwab/eckstein/gt/data_dilated_mask_20/'
+from functions_classes.gt_generation_fully_annotated_block_3 import make_gt_block
+input_filepath = '/g/schwab/eckstein/gt/raw_gt_mask_new_annotation/MIB Tomo Annotation 3.model'
+input_filepath_mask = '/g/schwab/eckstein/gt/raw_gt_mask_new_annotation/GT_block_3_mask.model'
+result_folder = '/g/schwab/eckstein/gt/raw_gt_mask_new_annotation/block_3/no_mask_golgi/erode_5/'
 
-make_gt(input_filepath, result_folder, key = 'mibModel', dilate = 20, erode = 2)
+make_gt_block(input_filepath, input_filepath_mask, result_folder, key = 'mibModel', erode = 5)
 
 #gt = h5py.File('/g/schwab/eckstein/gt/data_dilated_mask/mem_gt_mask.h5', mode = 'r')
 
