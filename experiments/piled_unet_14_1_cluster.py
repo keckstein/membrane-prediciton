@@ -9,14 +9,14 @@ import sys
 # sys.path.append('/home/eckstein/code/pytorch_membrane_net/')
 sys.path.append('/g/schwab/eckstein/code/membrane-prediciton/pytorch_membrane_net/')
 
-from pytorch_membrane_net.pytorch_tools.piled_unets import PiledUnet
-from pytorch_membrane_net.pytorch_tools.data_generation import parallel_data_generator
-from pytorch_membrane_net.pytorch_tools.losses import CombinedLosses
+from pytorch_tools.piled_unets import PiledUnet
+from pytorch_tools.data_generation import parallel_data_generator
+from pytorch_tools.losses import CombinedLosses
 import h5py
 # import torch.utils.tensorboard as tb
 from torch.utils.tensorboard import SummaryWriter
 import datetime
-from pytorch_membrane_net.pytorch_tools.losses import WeightMatrixWeightedBCE
+from pytorch_tools.losses import WeightMatrixWeightedBCE
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
