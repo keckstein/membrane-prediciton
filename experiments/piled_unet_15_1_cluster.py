@@ -7,7 +7,7 @@ import sys
 
 # Choose the correct repo path
 # sys.path.append('/home/eckstein/code/pytorch_membrane_net/')
-sys.path.append('/g/schwab/hennies/src/github/pytorch_membrane_net/')
+sys.path.append('/g/schwab/eckstein/code/membrane-prediciton/pytorch_membrane_net/')
 from pytorch_tools.piled_unets import PiledUnet
 from pytorch_tools.data_generation import parallel_data_generator
 from pytorch_tools.losses import CombinedLosses
@@ -97,7 +97,8 @@ train_gen = parallel_data_generator(
         cval=0,
         brightness_range=32,  # test
         contrast_range=(0.9, 1.2),  # test
-        transpose = False
+        transpose = False,
+        displace_positions = 20
     ),
     transform_ratio=0.9,
     batch_size=1,
@@ -107,7 +108,8 @@ train_gen = parallel_data_generator(
     n_workers=2,
     n_workers_noise=1,
     noise_on_channels=None,
-    yield_epoch_info=True
+    yield_epoch_info=True,
+    displace_positions = 16
 )
 
 val_gen = parallel_data_generator(
@@ -125,7 +127,8 @@ val_gen = parallel_data_generator(
     add_pad_mask=False,
     n_workers=2,
     gt_target_channels=None,
-    yield_epoch_info=True
+    yield_epoch_info=True,
+    displace_positions = 0
 )
 
 # model
@@ -180,7 +183,7 @@ network.train()
 # tensorboard
 # example_input = torch.rand(1, 1, 64, 64, 64)
 writer = SummaryWriter(
-    '/g/schwab/eckstein/scripts/tensorboard/piled_unet_15_run1_new' + datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))
+    '/g/schwab/eckstein/scripts/tensorboard/piled_unet_15_run1_displaced' + datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))
 # writer.add_graph(network, example_input, verbose=True)  # graph with network structure, verbose = True prints result
 # writer.flush()
 
@@ -315,7 +318,7 @@ for x, y, epoch, n, loe in train_gen:
                     # save model if val_loss is improved
                     if best_val_loss is None or val_loss < best_val_loss:
                         best_val_loss = val_loss
-                        torch.save(network.state_dict(), f'/scratch/eckstein/models/piled_unet_15_run1_new/result{epoch:04d}.h5')
+                        torch.save(network.state_dict(), f'/scratch/eckstein/models/piled_unet_15_run1_displaced/result{epoch:04d}.h5')
                     break
 
 writer.close()

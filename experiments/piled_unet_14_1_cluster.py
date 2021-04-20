@@ -112,7 +112,7 @@ train_gen = parallel_data_generator(
     n_workers_noise=1,
     noise_on_channels=None,
     yield_epoch_info=True,
-    displace_positions = 10
+    displace_positions = 16
 )
 
 val_gen = parallel_data_generator(
