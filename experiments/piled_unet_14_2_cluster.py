@@ -218,7 +218,7 @@ for x, y, epoch, n, loe in train_gen:
         i += 1
 
         with h5py.File(f'/g/schwab/eckstein/train_data/test_area_size/x_iteration{epoch}_{n}.h5', mode='w') as f:
-            f.create_dataset('data', data=x[0][0], compression='gzip')
+            f.create_dataset('data', data=x[0][0].cpu().detach().numpy(), compression='gzip')
 
         # with h5py.File(f'/g/schwab/eckstein/train_data/y_iteration{epoch}_{n}.h5', mode='w') as f:
         # f.create_dataset('data', data=y[0][0], compression='gzip')
