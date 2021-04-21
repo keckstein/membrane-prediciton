@@ -216,7 +216,7 @@ for x, y, epoch, n, loe in train_gen:
     optimizer.zero_grad()
 
 
-    x = torch.tensor(np.moveaxis(x,4,1) dtype=torch.float32).to(device)
+    x = torch.tensor(np.moveaxis(x,4,1), dtype=torch.float32).to(device)
     y = torch.tensor(np.moveaxis(y,4,1), dtype=torch.float32).to(device)
 
     if y[0, 1, :].cpu().detach().numpy().max():
