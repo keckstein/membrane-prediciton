@@ -6,7 +6,7 @@ import torch.optim as optim
 import sys
 
 # Choose the correct repo path
-# sys.path.append('/home/eckstein/code/pytorch_membrane_net/')
+#sys.path.append('/home/eckstein/code/pytorch_membrane_net/')
 sys.path.append('/g/schwab/eckstein/code/membrane-prediciton/pytorch_membrane_net/')
 
 from pytorch_tools.piled_unets import PiledUnet
@@ -214,14 +214,16 @@ for x, y, epoch, n, loe in train_gen:
     # optimizer.zero_grad()  # zero the gradient buffers
     network.train()
     optimizer.zero_grad()
-    x = torch.tensor(np.moveaxis(x, 4, 1), dtype=torch.float32).to(device)
-    y = torch.tensor(np.moveaxis(y, 4, 1), dtype=torch.float32).to(device)
+
+
+    x = torch.tensor(np.moveaxis(x,4,1) dtype=torch.float32).to(device)
+    y = torch.tensor(np.moveaxis(y,4,1), dtype=torch.float32).to(device)
 
     if y[0, 1, :].cpu().detach().numpy().max():
         i += 1
 
-        # with h5py.File(f'/g/schwab/eckstein/train_data/x_iteration{epoch}_{n}.h5', mode='w') as f:
-        # f.create_dataset('data', data=x[0][0], compression='gzip')
+        with h5py.File(f'/g/schwab/eckstein/train_data/test_area_size/x_iteration{epoch}_{n}.h5', mode='w') as f:
+            f.create_dataset('data', data=x[0][0], compression='gzip')
 
         # with h5py.File(f'/g/schwab/eckstein/train_data/y_iteration{epoch}_{n}.h5', mode='w') as f:
         # f.create_dataset('data', data=y[0][0], compression='gzip')
