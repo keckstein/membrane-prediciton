@@ -157,9 +157,9 @@ val_gen = parallel_data_generator(
                     output_activation='sigmoid',
                     predict = False)"""
 
-network = PiledUnet(n_nets=2,
+network = PiledUnet(n_nets=1,
                     in_channels=1,
-                    out_channels=[1, 1],
+                    out_channels=[1],
                     filter_sizes_down=(
                         ((8, 16), (16, 32), (32, 64))  # ((8, 16), (16, 32), (32, 64)),((8, 16), (16, 32), (32, 64))
                     ),
