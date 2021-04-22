@@ -219,8 +219,8 @@ for x, y, epoch, n, loe in train_gen:
     x = torch.tensor(np.moveaxis(x,4,1), dtype=torch.float32).to(device)
     y = torch.tensor(np.moveaxis(y,4,1), dtype=torch.float32).to(device)
 
-    if y[0, 1, :].cpu().detach().numpy().max():
-        i += 1
+    if y[:, 1, :].cpu().detach().numpy().max():
+        i += 4
 
         #with h5py.File(f'/scratch/eckstein/train_data/test_area_size/x_iteration{epoch}_{n}.h5', mode='w') as f:
             #f.create_dataset('data', data=x[0][0].cpu().detach().numpy(), compression='gzip')
