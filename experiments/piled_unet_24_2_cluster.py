@@ -160,18 +160,13 @@ val_gen = parallel_data_generator(
 network = PiledUnet(n_nets=1,
                     in_channels=1,
                     out_channels=[1],
-                    filter_sizes_down=(
-                        ((8, 16), (16, 32), (32, 64))  # ((8, 16), (16, 32), (32, 64)),((8, 16), (16, 32), (32, 64))
-                    ),
-                    filter_sizes_bottleneck=(
-                        (64, 128)  # (64, 128), (64, 128)
-                    ),
-                    filter_sizes_up=(
-                        ((64, 64), (32, 32), (16, 16))  # ((64, 64), (32, 32), (16, 16)),((64, 64), (32, 32), (16, 16))
-                    ),
+                    filter_sizes_down=(((8, 16), (16, 32), (32, 64))),
+                    filter_sizes_bottleneck=((64, 128)),
+                    filter_sizes_up=(((64, 64), (32, 32), (16, 16))),
                     batch_norm=True,
                     output_activation='sigmoid',
                     )
+
 
 network.to(device)
 # set model to train mode

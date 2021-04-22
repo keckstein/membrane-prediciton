@@ -314,7 +314,7 @@ for x, y, epoch, n, loe in train_gen:
                     val_acc = acc / j
                     print('Validation accuracy: ', val_acc)
 
-                    w#riter.add_scalar('val_accuracy', val_acc, val_epoch)
+                    #writer.add_scalar('val_accuracy', val_acc, val_epoch)
                     #writer.flush()
                     writer.add_scalar('val_loss', val_loss, val_epoch)
                     writer.flush()
