@@ -160,9 +160,9 @@ val_gen = parallel_data_generator(
 network = PiledUnet(n_nets=1,
                     in_channels=1,
                     out_channels=[1],
-                    filter_sizes_down=(((8, 16), (16, 32), (32, 64)),),
-                    filter_sizes_bottleneck=((64, 128),),
-                    filter_sizes_up=(((64, 64), (32, 32), (16, 16)),),
+                    filter_sizes_down=[((8, 16), (16, 32), (32, 64))],
+                    filter_sizes_bottleneck=[(64, 128)],
+                    filter_sizes_up=[((64, 64), (32, 32), (16, 16))],
                     batch_norm=True,
                     output_activation='sigmoid',
                     )
@@ -185,9 +185,9 @@ optimizer = optim.Adam(network.parameters(), lr=0.0001, betas=(0.9, 0.999), weig
 
 oss = CombinedLosses(losses=(
     WeightMatrixWeightedBCE((0.2, 0.8), weigh_with_matrix_sum=False)), #WeightMatrixWeightedBCE(((0.4, 0.6),), weigh_with_matrix_sum=False), WeightMatrixWeightedBCE(((0.5, 0.5),), weigh_with_matrix_sum=False),,
-    y_pred_channels=(np.s_[0]),  # , np.s_[1:2], np.s_[2:3]
-    y_true_channels=(np.s_[:]),  # , np.s_[:]), np.s_[:]
-    weigh_losses=[1]  #0.6, 0.5
+    y_pred_channels=[np.s_[:1]],  # , np.s_[1:2], np.s_[2:3]
+    y_true_channels=[np.s_[:]],  # , np.s_[:]), np.s_[:]
+    weigh_losses=None  #0.6, 0.5
 )
 sum_train_loss = 0
 best_val_loss = None
