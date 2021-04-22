@@ -246,7 +246,8 @@ for x, y, epoch, n, loe in train_gen:
                 x_val = torch.tensor(np.moveaxis(x_val, 4, 1), dtype=torch.float32).to(device)
                 val_output = network(x_val)
                 y_val = torch.tensor(np.moveaxis(y_val, 4, 1), dtype=torch.float32).to(device)
-
+                print(val_output.shape)
+                print(y_val.shape)
                 if y_val[0, 1, :].cpu().detach().numpy().max():
                     j += 1
                     # with h5py.File(f'/g/schwab/eckstein/val_output/y_val_iteration{epoch}{val_n}.h5', mode ='w') as f:
