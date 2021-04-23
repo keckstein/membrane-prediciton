@@ -100,7 +100,7 @@ train_gen = parallel_data_generator(
         transpose = False
     ),
     transform_ratio=0.9,
-    batch_size=1,
+    batch_size=4,
     shuffle=True,
     add_pad_mask=False,
     noise_load_dict=None,
@@ -108,7 +108,7 @@ train_gen = parallel_data_generator(
     n_workers_noise=1,
     noise_on_channels=None,
     yield_epoch_info=True,
-    displace_positions = 8
+    displace_positions = 16
 )
 
 val_gen = parallel_data_generator(
@@ -183,7 +183,7 @@ network.train()
 
 # tensorboard
 # example_input = torch.rand(1, 1, 64, 64, 64)
-writer = SummaryWriter('/g/schwab/eckstein/scripts/tensorboard/piled_unet_14_run2_displaced' + datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))
+writer = SummaryWriter('/g/schwab/eckstein/scripts/tensorboard/piled_unet_14_run2_new_gt' + datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))
 # writer.add_graph(network, example_input, verbose=True)  # graph with network structure, verbose = True prints result
 # writer.flush()
 
@@ -214,8 +214,8 @@ for x, y, epoch, n, loe in train_gen:
     x = torch.tensor(np.moveaxis(x, 4, 1), dtype=torch.float32).to(device)
     y = torch.tensor(np.moveaxis(y, 4, 1), dtype=torch.float32).to(device)
 
-    if y[0, 1, :].cpu().detach().numpy().max():
-        i += 1
+    if y[:, 1, :].cpu().detach().numpy().max():
+        i += 4
 
         #with h5py.File(f'/scratch/eckstein/train_data/test_area_size/x_iteration{epoch}_{n}.h5', mode='w') as f:
             #f.create_dataset('data', data=x[0][0].cpu().detach().numpy(), compression='gzip')
@@ -318,7 +318,7 @@ for x, y, epoch, n, loe in train_gen:
                     # save model if val_loss is improved
                     if best_val_loss is None or val_loss < best_val_loss:
                         best_val_loss = val_loss
-                        torch.save(network.state_dict(), f'/scratch/eckstein/models/piled_unet_14_run2_displaced/result{epoch:04d}.h5')
+                        torch.save(network.state_dict(), f'/scratch/eckstein/models/piled_unet_14_run2_new_gt/result{epoch:04d}.h5')
                     break
 
 writer.close()

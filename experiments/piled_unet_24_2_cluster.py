@@ -38,7 +38,7 @@ filepath_raw_3 = f'{input_filepath_data}raw_split/raw_2.h5'
 
 # filepath_gt_1=f'{input_filepath_data}gt_split/gt_0.h5'
 # filepath_gt_2=f'{input_filepath_data}gt_split/gt_1.h5'
-filepath_gt_3 = f'/scratch/eckstein/input_data/gt/raw_gt_mask_new_annotation/block_3/erode_13/mem_gt_block_3.h5'
+filepath_gt_3 = f'/scratch/eckstein/input_data/gt/raw_gt_mask_new_annotation/block_3/mem_gt_block_3.h5'
 # filepath_gt_3 = f'{input_filepath_data}gt_split/gt_2.h5'
 # filepath_gt_4=f'{input_filepath_data}gt_split/gt_3.h5'
 # filepath_gt_5=f'{input_filepath_data}gt_split/gt_4.h5'
@@ -175,7 +175,7 @@ network.train()
 # tensorboard
 # example_input = torch.rand(1, 1, 64, 64, 64)
 writer = SummaryWriter(
-    '/g/schwab/eckstein/scripts/tensorboard/piled_unet_24_run2' + datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))
+    '/g/schwab/eckstein/scripts/tensorboard/piled_unet_24_run2_new_gt' + datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))
 # writer.add_graph(network, example_input, verbose=True)  # graph with network structure, verbose = True prints result
 # writer.flush()
 
@@ -300,7 +300,7 @@ for x, y, epoch, n, loe in train_gen:
                     if best_val_loss is None or val_loss < best_val_loss:
                         best_val_loss = val_loss
                         torch.save(network.state_dict(),
-                                   f'/scratch/eckstein/models/piled_unet_24_run2/result{epoch:04d}.h5')
+                                   f'/scratch/eckstein/models/piled_unet_24_run2_new_gt/result{epoch:04d}.h5')
                     break
 
 writer.close()
