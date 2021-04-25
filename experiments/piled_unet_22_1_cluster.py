@@ -99,7 +99,7 @@ train_gen = parallel_data_generator(
         displace_slices_range=0,
         fill_mode='reflect',
         cval=0,
-        brightness_range=64,  # test
+        brightness_range=32,  # test
         contrast_range=(0.9, 1.2),  # test
         transpose = False
     ),
@@ -186,7 +186,7 @@ network.train()
 # tensorboard
 # example_input = torch.rand(1, 1, 64, 64, 64)
 writer = SummaryWriter(
-    '/g/schwab/eckstein/scripts/tensorboard/piled_unet_22_run1_new_gt' + datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))
+    '/g/schwab/eckstein/scripts/tensorboard/piled_unet_22_run1_new_gt_brightness_32' + datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))
 # writer.add_graph(network, example_input, verbose=True)  # graph with network structure, verbose = True prints result
 # writer.flush()
 
@@ -323,7 +323,7 @@ for x, y, epoch, n, loe in train_gen:
                     # save model if val_loss is improved
                     if best_val_loss is None or val_loss < best_val_loss:
                         best_val_loss = val_loss
-                        torch.save(network.state_dict(), f'/scratch/eckstein/models/piled_unet_22_run1_new_gt/result{epoch:04d}.h5')
+                        torch.save(network.state_dict(), f'/scratch/eckstein/models/piled_unet_22_run1_new_gt_brightness_32/result{epoch:04d}.h5')
                     break
 
 writer.close()
