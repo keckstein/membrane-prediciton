@@ -7,8 +7,6 @@ target_folder = '/g/schwab/eckstein/code/models/unet3d_tomo/cluster/piled_unet_1
 source_filepath = '/g/schwab/eckstein/code/models/unet3d_tomo/cluster/piled_unet_14_run2_new_gt/predictions/reshaped_prediction_32_c013_result0150.h5'
 target_filepath = f'{target_folder}c013_result0150.h5'
 source_in_file = 'data'
-if not os.path.exists(target_folder):
-    os.makedirs(target_folder)
 
 run(source_filepath,target_filepath,source_in_file,verbose = False)
 
