@@ -1,7 +1,7 @@
 import sys
 sys.path.append('/g/schwab/eckstein/code/membrane-prediciton/membranet_segmentation/')
 import os
-from membranet_segmentation.scripts.run_supervoxels import run
+from scripts.run_supervoxels import run
 
 
 
