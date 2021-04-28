@@ -4,8 +4,8 @@ import os
 from run_supervoxels import run
 
 target_folder = '/g/schwab/eckstein/code/models/unet3d_tomo/cluster/piled_unet_14_run2_new_gt/supervoxels/'
-source_filepath = '/g/schwab/eckstein/code/models/unet3d_tomo/cluster/piled_unet_14_run2_new_gt/predictions/reshaped_prediction_raw_2_result0150.h5'
-target_filepath = f'{target_folder}raw_2_result0150_3.h5'
+source_filepath = '/g/schwab/eckstein/code/models/unet3d_tomo/cluster/piled_unet_14_run2_new_gt/predictions/reshaped_prediction_c013_0_result0150.h5'
+target_filepath = f'{target_folder}c013_0_result0150.h5'
 source_in_file = 'data'
 
 #if not os.path.exists(target_folder:
