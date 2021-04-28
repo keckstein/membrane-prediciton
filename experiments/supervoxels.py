@@ -1,8 +1,7 @@
 import sys
-sys.path.append('/g/schwab/eckstein/code/membrane-prediciton/membranet_segmentation/')
+sys.path.append('/g/schwab/eckstein/code/membrane-prediciton/membranet_segmentation/scripts/')
 import os
-from scripts.run_supervoxels import run
-
+from run_supervoxels import run
 
 
 source_filepath = '/g/schwab/eckstein/code/models/unet3d_tomo/cluster/piled_unet_14_run2_new_gt/predictions/reshaped_prediction_32_c013_result_0150.h5'
